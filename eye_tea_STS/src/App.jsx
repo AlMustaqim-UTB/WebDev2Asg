@@ -123,7 +123,9 @@ function App() {
       <Card/>
       <Card/>
     </div>
+
   );
 }
+
 
 export default App
