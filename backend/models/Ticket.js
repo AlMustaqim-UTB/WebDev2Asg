@@ -1,3 +1,5 @@
+//Ticket document structure inside mongodb 
+
 import mongoose from 'mongoose';
 
 const ticketSchema = new mongoose.Schema({
