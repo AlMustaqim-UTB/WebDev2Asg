@@ -23,7 +23,7 @@ export default function TicketCreate({ setPage }) {
     setError('');
     
     try {
-      const response = await fetch('http://localhost:5000/api/tickets/create', {
+      const response = await fetch('/api/ticket/create', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
