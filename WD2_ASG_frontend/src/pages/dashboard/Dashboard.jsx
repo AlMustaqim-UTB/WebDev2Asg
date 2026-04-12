@@ -1,12 +1,25 @@
-import { useAuth } from "../../auth/useAuth";
-import UserDashboard from "./UserDashboard";
+import userAuth from "../../auth/userAuth";
+import Navbar from "../../components/navigation/Navbar";
 import TechnicianDashboard from "./TechnicianDashboard";
+import UserDashboard from "./UserDashboard";
 
-export default function Dashboard(props) {
-  const { user } = useAuth();
-  return user.role === "user" ? (
-    <UserDashboard {...props} />
-  ) : (
-    <TechnicianDashboard {...props} />
+export default function Dashboard() {
+  const { user } = userAuth();
+
+  if (!user) {
+    return <div>Loading...</div>;
+  }
+
+  return (
+    <div>
+      <Navbar />
+      <main className="p-4">
+        {user.role === "technician" ? (
+          <TechnicianDashboard />
+        ) : (
+          <UserDashboard />
+        )}
+      </main>
+    </div>
   );
 }

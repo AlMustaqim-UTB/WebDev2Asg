@@ -1,183 +1,150 @@
-import { useState } from "react";
-import { useAuth } from "../../auth/useAuth";
-import DetailRow from "../../components/tickets/DetailRow";
+import { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import userAuth from "../../auth/userAuth";
 
-export default function TicketEdit({ id, setPage }) {
-  const { user } = useAuth();
-
-  const isUser = user.role === "user";
-  const isTechnician = user.role === "technician";
-
-  // Mock ticket state (API later)
-  const [ticket, setTicket] = useState({
-    id,
-    title: "Login not working",
-    category: "Authentication",
-    department: "IT Support",
-    description: "User cannot log in using correct credentials.",
-    status: "Resolved",
-    priority: "High",
-    assignedTo: "Technician B",
-    resolvedAt: "",
-    remarks: [],
+export default function TicketEdit() {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const { user } = userAuth();
+  const [ticket, setTicket] = useState(null);
+  const [technicians, setTechnicians] = useState([]);
+  const [formData, setFormData] = useState({
+    status: "",
+    priority: "",
+    assigned_to: "",
   });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const [newRemark, setNewRemark] = useState("");
+  useEffect(() => {
+    const fetchTicketAndTechnicians = async () => {
+      try {
+        setLoading(true);
+        const token = localStorage.getItem("token");
+        if (!token) throw new Error("Authentication token not found.");
 
-  const handleChange = (field, value) => {
-    setTicket((prev) => ({ ...prev, [field]: value }));
+        // Fetch ticket details
+        const ticketResponse = await fetch(`/api/tickets/id/${id}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!ticketResponse.ok) throw new Error("Failed to fetch ticket details.");
+        const ticketData = await ticketResponse.json();
+        setTicket(ticketData);
+        setFormData({
+          status: ticketData.status,
+          priority: ticketData.priority,
+          assigned_to: ticketData.assigned_to?._id || "",
+        });
+
+        // Fetch technicians
+        const techResponse = await fetch("/api/users/technicians", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!techResponse.ok) throw new Error("Failed to fetch technicians.");
+        const techData = await techResponse.json();
+        setTechnicians(techData);
+
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (user?.role === "technician") {
+      fetchTicketAndTechnicians();
+    } else {
+        setError("You do not have permission to edit this ticket.");
+        setLoading(false);
+    }
+  }, [id, user]);
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleAddRemark = () => {
-    if (!newRemark.trim()) return;
+  const handleSubmit = async (e) => {
+    e.preventDefault();
 
-    setTicket((prev) => ({
-      ...prev,
-      remarks: [
-        ...prev.remarks,
-        {
-          id: Date.now(),
-          author: user.name,
-          message: newRemark,
-          createdAt: new Date().toLocaleString(),
+    // Add confirmation dialog
+    if (!window.confirm("Are you sure you want to save these changes?")) {
+      return; // If user clicks 'Cancel', do nothing
+    }
+
+    try {
+      const token = localStorage.getItem("token");
+      const updateData = { ...formData };
+
+      if (formData.status === "Resolved" && ticket.status !== "Resolved") {
+        updateData.date_resolved = new Date().toISOString();
+      }
+
+      const response = await fetch(`/api/tickets/${id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
-      ],
-    }));
+        body: JSON.stringify(updateData),
+      });
 
-    setNewRemark("");
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to update ticket.");
+      }
+
+      navigate(`/tickets/${id}`);
+    } catch (err) {
+      setError(err.message);
+    }
   };
+
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div className="text-red-500 p-4">{error}</div>;
+  if (!ticket) return <div>Ticket not found.</div>;
 
   return (
-    <div className="p-4 md:p-6 max-w-4xl mx-auto">
-      <h1 className="text-xl md:text-2xl font-bold mb-6">
-        Edit Ticket #{ticket.id}
-      </h1>
+    <div className="p-4 md:p-6 max-w-2xl mx-auto">
+      <h1 className="text-xl md:text-2xl font-bold mb-6">Edit Ticket #{ticket.key}</h1>
+      <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-sm p-6 space-y-6">
+        <div className="flex flex-col">
+          <label htmlFor="status" className="font-semibold mb-2">Status</label>
+          <select id="status" name="status" value={formData.status} onChange={handleChange} className="p-2 border rounded">
+            <option value="Open">Open</option>
+            <option value="In Progress">In Progress</option>
+            <option value="Resolved">Resolved</option>
+          </select>
+        </div>
 
-      <div className="bg-white rounded-lg shadow-sm p-4 md:p-6 space-y-6">
-        <DetailRow label="Title">{ticket.title}</DetailRow>
+        <div className="flex flex-col">
+          <label htmlFor="priority" className="font-semibold mb-2">Priority</label>
+          <select id="priority" name="priority" value={formData.priority} onChange={handleChange} className="p-2 border rounded">
+            <option value="Low">Low</option>
+            <option value="Medium">Medium</option>
+            <option value="High">High</option>
+          </select>
+        </div>
 
-        <DetailRow label="Category">
-          {isTechnician ? (
-            <select
-              className="w-full border rounded px-3 py-2"
-              value={ticket.category}
-              onChange={(e) => handleChange("category", e.target.value)}
-            >
-              <option>Authentication</option>
-              <option>Network</option>
-              <option>Hardware</option>
-              <option>Software</option>
-              <option>Other</option>
-            </select>
-          ) : (
-            ticket.category
-          )}
-        </DetailRow>
+        <div className="flex flex-col">
+          <label htmlFor="assigned_to" className="font-semibold mb-2">Assign to</label>
+          <select id="assigned_to" name="assigned_to" value={formData.assigned_to} onChange={handleChange} className="p-2 border rounded">
+            <option value="">Unassigned</option>
+            {technicians.map((tech) => (
+              <option key={tech._id} value={tech._id}>{tech.name}</option>
+            ))}
+          </select>
+        </div>
 
-        {isTechnician && (
-          <DetailRow label="Department">
-            <input
-              className="w-full border rounded px-3 py-2"
-              value={ticket.department}
-              onChange={(e) => handleChange("department", e.target.value)}
-            />
-          </DetailRow>
-        )}
-
-        <DetailRow label="Description">{ticket.description}</DetailRow>
-
-        <DetailRow label="Status">
-          {isTechnician || isUser ? (
-            <select
-              className="w-full border rounded px-3 py-2"
-              value={ticket.status}
-              onChange={(e) => {
-                const value = e.target.value;
-                handleChange("status", value);
-                if (value === "Resolved") {
-                  handleChange("resolvedAt", new Date().toLocaleDateString());
-                }
-              }}
-            >
-              <option>Open</option>
-              <option>In Progress</option>
-              <option>Resolved</option>
-              {isUser && <option>Closed</option>}
-            </select>
-          ) : (
-            ticket.status
-          )}
-        </DetailRow>
-
-        <DetailRow label="Priority">
-          {isTechnician ? (
-            <select
-              className="w-full border rounded px-3 py-2"
-              value={ticket.priority}
-              onChange={(e) => handleChange("priority", e.target.value)}
-            >
-              <option>Low</option>
-              <option>Medium</option>
-              <option>High</option>
-              <option>Critical</option>
-            </select>
-          ) : (
-            ticket.priority
-          )}
-        </DetailRow>
-
-        {isTechnician && (
-          <DetailRow label="Assigned to">
-            <input
-              className="w-full border rounded px-3 py-2"
-              value={ticket.assignedTo}
-              onChange={(e) => handleChange("assignedTo", e.target.value)}
-            />
-          </DetailRow>
-        )}
-
-        {isTechnician && (
-          <DetailRow label="Technician Remarks">
-            <div className="space-y-3">
-              <textarea
-                value={newRemark}
-                onChange={(e) => setNewRemark(e.target.value)}
-                className="w-full border rounded px-3 py-2 min-h-[80px]"
-                placeholder="Add internal remark"
-              />
-
-              <button
-                onClick={handleAddRemark}
-                className="bg-[#274c77] text-white px-3 py-2 rounded"
-              >
-                Add Remark
-              </button>
-
-              {ticket.remarks.map((r) => (
-                <div key={r.id} className="border-l-4 border-[#6096ba] pl-3">
-                  <p className="text-sm">{r.message}</p>
-                  <p className="text-xs text-[#8b8c89]">
-                    {r.author} · {r.createdAt}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </DetailRow>
-        )}
-      </div>
-
-      <div className="mt-6 flex gap-3">
-        <button className="bg-blue-600 text-white px-4 py-2 rounded">
-          Save Changes
-        </button>
-
-        <button
-          onClick={() => setPage("detail")}
-          className="bg-gray-300 px-4 py-2 rounded"
-        >
-          Cancel
-        </button>
-      </div>
+        <div className="flex gap-4 mt-6">
+          <button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">
+            Save Changes
+          </button>
+          <button type="button" onClick={() => navigate(`/tickets/${id}`)} className="bg-gray-300 hover:bg-gray-400 px-4 py-2 rounded">
+            Cancel
+          </button>
+        </div>
+      </form>
     </div>
   );
 }
