@@ -58,6 +58,7 @@ export default function UserDashboard() {
               key={ticket._id}
               ticket={ticket}
               onSelect={() => handleSelect(ticket._id)}
+              role={"user"}
             />
           ))}
         </div>

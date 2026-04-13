@@ -11,7 +11,7 @@ export default function Dashboard() {
   }
 
   return (
-    <div>
+    <div className="min-h-screen bg-[#f2f2f2]">
       <Navbar />
       <main className="p-4">
         {user.role === "technician" ? (

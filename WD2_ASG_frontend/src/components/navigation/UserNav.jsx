@@ -1,19 +1,27 @@
-export default function UserNav({ setPage }) {
+import { NavLink } from "react-router-dom";
+
+export default function UserNav({}) {
   return (
     <div className="flex flex-col md:flex-row gap-4 items-start">
-      <button
-        onClick={() => setPage("dashboard")}
-        className="w-full md:w-auto text-left hover:text-[#a3cef1] transition-colors"
+      <NavLink
+        to="/dashboard"
+        className={({ isActive }) =>
+          `w-full md:w-auto text-left transition-colors hover:text-[#a3cef1]
+           ${isActive ? "font-bold" : "font-normal"}`
+        }
       >
         Dashboard
-      </button>
+      </NavLink>
 
-      <button
-        onClick={() => setPage("create")}
-        className="w-full md:w-auto text-left hover:text-[#a3cef1] transition-colors"
+      <NavLink
+        to="/tickets/new"
+        className={({ isActive }) =>
+          `w-full md:w-auto text-left transition-colors hover:text-[#a3cef1]
+           ${isActive ? "font-bold" : "font-normal"}`
+        }
       >
         Create Ticket
-      </button>
+      </NavLink>
     </div>
   );
 }

@@ -9,6 +9,7 @@ import TicketDetail from "./pages/tickets/TicketDetail";
 import TicketEdit from "./pages/tickets/TicketEdit";
 import ProtectedRoute from "./auth/ProtectedRoute";
 import { Toaster } from "react-hot-toast";
+import Navbar from "./components/navigation/Navbar";
 
 function App() {
   return (
@@ -18,14 +19,22 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/dashboard" element={<Dashboard />} />
-        
+
         {/* FIX: Add the route for ticket details */}
         <Route path="/tickets/:id" element={<TicketDetail />} />
 
         <Route
+          path="/tickets/new"
+          element={
+            <ProtectedRoute roles={["user"]}>
+              <TicketCreate />
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/tickets/:id/edit"
           element={
-            <ProtectedRoute roles={['technician']}>
+            <ProtectedRoute roles={["technician"]}>
               <TicketEdit />
             </ProtectedRoute>
           }
@@ -33,12 +42,12 @@ function App() {
         <Route
           path="/create-ticket"
           element={
-            <ProtectedRoute roles={['technician']}>
+            <ProtectedRoute roles={["technician"]}>
               <TicketCreate />
             </ProtectedRoute>
           }
         />
-        <Route path="/" element={<Login />} /> 
+        <Route path="/" element={<Login />} />
       </Routes>
     </AuthProvider>
   );

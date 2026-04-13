@@ -1,6 +1,9 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import userAuth from "../../auth/userAuth";
+import Navbar from "../../components/navigation/Navbar";
+import DetailRow from "../../components/tickets/DetailRow";
+import StatusBadge from "../../components/tickets/StatusBadge";
 
 export default function TicketEdit() {
   const { id } = useParams();
@@ -27,7 +30,8 @@ export default function TicketEdit() {
         const ticketResponse = await fetch(`/api/tickets/id/${id}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
-        if (!ticketResponse.ok) throw new Error("Failed to fetch ticket details.");
+        if (!ticketResponse.ok)
+          throw new Error("Failed to fetch ticket details.");
         const ticketData = await ticketResponse.json();
         setTicket(ticketData);
         setFormData({
@@ -43,7 +47,6 @@ export default function TicketEdit() {
         if (!techResponse.ok) throw new Error("Failed to fetch technicians.");
         const techData = await techResponse.json();
         setTechnicians(techData);
-
       } catch (err) {
         setError(err.message);
       } finally {
@@ -54,8 +57,8 @@ export default function TicketEdit() {
     if (user?.role === "technician") {
       fetchTicketAndTechnicians();
     } else {
-        setError("You do not have permission to edit this ticket.");
-        setLoading(false);
+      setError("You do not have permission to edit this ticket.");
+      setLoading(false);
     }
   }, [id, user]);
 
@@ -105,46 +108,93 @@ export default function TicketEdit() {
   if (!ticket) return <div>Ticket not found.</div>;
 
   return (
-    <div className="p-4 md:p-6 max-w-2xl mx-auto">
-      <h1 className="text-xl md:text-2xl font-bold mb-6">Edit Ticket #{ticket.key}</h1>
-      <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-sm p-6 space-y-6">
-        <div className="flex flex-col">
-          <label htmlFor="status" className="font-semibold mb-2">Status</label>
-          <select id="status" name="status" value={formData.status} onChange={handleChange} className="p-2 border rounded">
-            <option value="Open">Open</option>
-            <option value="In Progress">In Progress</option>
-            <option value="Resolved">Resolved</option>
-          </select>
-        </div>
+    <div className="min-h-screen bg-[#f2f2f2]">
+      <Navbar />
+      <div className="p-4 md:p-6 max-w-2xl mx-auto">
+        <h1 className="text-xl md:text-2xl font-bold mb-6">
+          Edit Ticket {ticket.key}
+        </h1>
+        <form
+          onSubmit={handleSubmit}
+          className="bg-white rounded-lg shadow-sm p-4 md:p-6 space-y-6"
+        >
+          <DetailRow label="Title">{ticket.title}</DetailRow>
+          <DetailRow label="Category">{ticket.category}</DetailRow>
+          <DetailRow label="Department">
+            {ticket.created_by?.department || "N/A"}
+          </DetailRow>
+          <DetailRow label="Reported by">
+            {ticket.created_by?.name || "Unknown"}
+          </DetailRow>
+          <DetailRow label="Description">
+            <span className="whitespace-pre-line">{ticket.description}</span>
+          </DetailRow>
 
-        <div className="flex flex-col">
-          <label htmlFor="priority" className="font-semibold mb-2">Priority</label>
-          <select id="priority" name="priority" value={formData.priority} onChange={handleChange} className="p-2 border rounded">
-            <option value="Low">Low</option>
-            <option value="Medium">Medium</option>
-            <option value="High">High</option>
-          </select>
-        </div>
+          <DetailRow htmlFor="status" label="Status">
+            <select
+              id="status"
+              name="status"
+              value={formData.status}
+              onChange={handleChange}
+              className="w-full border rounded px-3 py-2 cursor-pointer"
+            >
+              <option value="Open">Open</option>
+              <option value="In Progress">In Progress</option>
+              <option value="Resolved">Resolved</option>
+              <option value="Closed">Closed</option>
+            </select>
+          </DetailRow>
 
-        <div className="flex flex-col">
-          <label htmlFor="assigned_to" className="font-semibold mb-2">Assign to</label>
-          <select id="assigned_to" name="assigned_to" value={formData.assigned_to} onChange={handleChange} className="p-2 border rounded">
-            <option value="">Unassigned</option>
-            {technicians.map((tech) => (
-              <option key={tech._id} value={tech._id}>{tech.name}</option>
-            ))}
-          </select>
-        </div>
+          <DetailRow htmlFor="priority" label="Priority">
+            <select
+              id="priority"
+              name="priority"
+              value={formData.priority}
+              onChange={handleChange}
+              className="w-full border rounded px-3 py-2 cursor-pointer"
+            >
+              <option value="Low">Low</option>
+              <option value="Medium">Medium</option>
+              <option value="High">High</option>
+            </select>
+          </DetailRow>
 
-        <div className="flex gap-4 mt-6">
-          <button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">
+          <DetailRow htmlFor="assigned_to" label="Assigned to">
+            <select
+              id="assigned_to"
+              name="assigned_to"
+              value={formData.assigned_to}
+              onChange={handleChange}
+              className="w-full border rounded px-3 py-2 cursor-pointer"
+            >
+              <option value="">Unassigned</option>
+              {technicians.map((tech) => (
+                <option key={tech._id} value={tech._id}>
+                  {tech.name}
+                </option>
+              ))}
+            </select>
+          </DetailRow>
+          <DetailRow label="Date created">
+            {new Date(ticket.date_created).toLocaleDateString()}
+          </DetailRow>
+        </form>
+        <div className="mt-6 flex flex-col md:flex-row gap-3">
+          <button
+            type="submit"
+            className="bg-[#096BAA] hover:opacity-90 text-white px-4 py-2 rounded w-full md:w-auto disabled:opacity-50 cursor-pointer"
+          >
             Save Changes
           </button>
-          <button type="button" onClick={() => navigate(`/tickets/${id}`)} className="bg-gray-300 hover:bg-gray-400 px-4 py-2 rounded">
+          <button
+            type="button"
+            onClick={() => navigate(`/tickets/${id}`)}
+            className="bg-gray-300 hover:bg-gray-400 px-4 py-2 rounded w-full md:w-auto cursor-pointer"
+          >
             Cancel
           </button>
         </div>
-      </form>
+      </div>
     </div>
   );
 }
