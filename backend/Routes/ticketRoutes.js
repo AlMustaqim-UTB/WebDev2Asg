@@ -1,32 +1,41 @@
 const express = require("express");
 const router = express.Router();
 const auth = require("../middleware/auth");
-
 const {
-  getUserTickets,
   createTicket,
+  getUserTickets,
+  addRemark,
   getTicketById,
   updateTicket,
   getAllTickets,
-  addRemark,
 } = require("../controller/ticketController");
 
-// Route to get tickets for the logged-in user
-router.get("/mytickets", auth, getUserTickets);
+// runs after auth, checks if logged-in user is technician.
+const technicianOnly = (req, res, next) => {
+  if (req.user?.role !== "technician") {
+    return res.status(403).json({ msg: "Access denied" });
+  }
+  next();
+};
 
-// Route to get all tickets (for technicians)
-router.get("/all", auth, getAllTickets);
-
-// Route to create a new ticket
+// Create a new ticket for the authenticated user.
 router.post("/", auth, createTicket);
 
-// Route to get a single ticket by its MongoDB _id
+// Get tickets created by the authenticated user.
+router.get("/", auth, getUserTickets);
+router.get("/my", auth, getUserTickets); 
+
+// Get one ticket by Mongo ObjectId.
+// Controller also validates the id format.
 router.get("/id/:id", auth, getTicketById);
 
-// Route to update a ticket
-router.put("/:id", auth, updateTicket);
-
-// Route to add a remark to a ticket
+// Add a remark/comment to a specific ticket.
 router.post("/:id/remarks", auth, addRemark);
+
+// Update ticket status/priority/assignment (technician only).
+router.put("/:id", auth, technicianOnly, updateTicket);
+
+// Get all tickets across users (technician only).
+router.get("/all", auth, technicianOnly, getAllTickets);
 
 module.exports = router;

@@ -1,21 +1,23 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import userAuth from "../../auth/userAuth";
+import { useAuth } from "../../auth/userAuth";
 
 export default function Login() {
-  const { login } = userAuth();
+  const [formData, setFormData] = useState({ email: "", password: "" });
+  const [error, setError] = useState(""); // Add error state
+  const { login } = useAuth();
   const navigate = useNavigate();
-
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
 
   const handleLogin = async (e) => {
     e.preventDefault();
-    setError("");
-    const result = await login(email, password);
-    if (result.success) navigate("/dashboard");
-    else setError(result.msg);
+    setError(""); // Clear previous errors
+    try {
+      await login(formData.email, formData.password);
+      navigate("/dashboard"); // Redirect on successful login
+    } catch (error) {
+      setError(error.message); // Set error message to display to the user
+      console.error("Login failed:", error.message);
+    }
   };
 
   return (
@@ -37,8 +39,8 @@ export default function Login() {
           type="email"
           className="border p-2 w-full mb-4"
           placeholder="Enter email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
+          value={formData.email}
+          onChange={(e) => setFormData({ ...formData, email: e.target.value })}
           required
         />
 
@@ -47,8 +49,8 @@ export default function Login() {
           type="password"
           className="border p-2 w-full mb-4"
           placeholder="Enter password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
+          value={formData.password}
+          onChange={(e) => setFormData({ ...formData, password: e.target.value })}
           required
         />
 

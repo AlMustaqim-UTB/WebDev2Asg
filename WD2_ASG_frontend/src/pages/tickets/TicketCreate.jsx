@@ -1,8 +1,13 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import DetailRow from "../../components/tickets/DetailRow";
-import Navbar from "../../components/navigation/Navbar";
+
+const RAW_API = import.meta.env.VITE_API_URL || "http://localhost:5000";
+const API = RAW_API.replace(/\/+$/, "").replace(/\/api$/i, "");
 
 export default function TicketCreate({ setPage }) {
+  const navigate = useNavigate();
+
   const [formData, setFormData] = useState({
     title: "",
     category: "",
@@ -14,38 +19,39 @@ export default function TicketCreate({ setPage }) {
   const { title, category, description } = formData;
 
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+  };
+
+  const goDashboard = () => {
+    if (typeof setPage === "function") setPage("dashboard");
+    else navigate("/dashboard");
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+    e?.preventDefault();
+
     if (!title || !category || !description) {
       setError("All fields are required.");
       return;
     }
+
     setError(null);
     setSubmitting(true);
 
     try {
-      const token = localStorage.getItem("token"); // Get token from storage
-      const res = await fetch("/api/tickets", {
+      const res = await fetch(`${API}/api/tickets`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          authorization: `Bearer ${token}`,
-        },
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify(formData),
       });
 
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.msg || "Failed to create ticket");
-      }
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.msg || "Failed to create ticket");
 
-      // On successful creation, navigate back to the dashboard
-      setPage("dashboard");
+      goDashboard();
     } catch (err) {
-      setError(err.message);
+      setError(err.message || "Failed to create ticket");
     } finally {
       setSubmitting(false);
     }
@@ -53,12 +59,9 @@ export default function TicketCreate({ setPage }) {
 
   return (
     <div className="min-h-screen bg-[#f2f2f2]">
-      <Navbar />
       <div className="p-4 md:p-6 max-w-4xl mx-auto">
-        {/* Page title */}
         <h1 className="text-xl md:text-2xl font-bold mb-6">Create Ticket</h1>
 
-        {/* Form card */}
         <form
           onSubmit={handleSubmit}
           className="bg-white rounded-lg shadow-sm p-4 md:p-6 space-y-6"
@@ -105,7 +108,6 @@ export default function TicketCreate({ setPage }) {
 
         {error && <p className="text-red-500 mt-4">{error}</p>}
 
-        {/* Actions */}
         <div className="mt-6 flex flex-col md:flex-row gap-3">
           <button
             onClick={handleSubmit}
@@ -116,7 +118,7 @@ export default function TicketCreate({ setPage }) {
           </button>
 
           <button
-            onClick={() => setPage("dashboard")}
+            onClick={goDashboard}
             className="bg-gray-300 hover:bg-gray-400 px-4 py-2 rounded w-full md:w-auto cursor-pointer"
           >
             Cancel

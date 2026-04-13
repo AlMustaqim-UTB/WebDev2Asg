@@ -1,7 +1,10 @@
-const Ticket = require('../models/Ticket');
-const Remark = require('../models/Remark'); // Import the Remark model
+const Ticket = require("../models/Ticket");
+const Remark = require("../models/Remark");
+const mongoose = require("mongoose");
 
-//Create a new ticket
+const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
+
+// Create a new ticket
 const createTicket = async (req, res) => {
   const { title, category, description } = req.body;
 
@@ -10,12 +13,11 @@ const createTicket = async (req, res) => {
   }
 
   try {
-    // Generate the ticket key 'IT-xxxx'
     const lastTicket = await Ticket.findOne().sort({ date_created: -1 });
-    let newKey = "IT-1001"; // Starting key
+    let newKey = "IT-1001";
 
     if (lastTicket && lastTicket.key) {
-      const lastKeyNumber = parseInt(lastTicket.key.split("-")[1]);
+      const lastKeyNumber = parseInt(lastTicket.key.split("-")[1], 10);
       newKey = `IT-${lastKeyNumber + 1}`;
     }
 
@@ -24,44 +26,49 @@ const createTicket = async (req, res) => {
       title,
       description,
       category,
-      created_by: req.user.id, // Get user ID from the middleware
+      created_by: req.user.id,
     });
 
     const ticket = await newTicket.save();
-    res.status(201).json(ticket);
+    return res.status(201).json(ticket);
   } catch (err) {
     console.error(err.message);
-    res.status(500).send("Server Error");
+    return res.status(500).json({ msg: "Server Error" });
   }
 };
 
-//Get user tickets
+// Get user tickets
+// only return ticket that are created by the logged in user
 const getUserTickets = async (req, res) => {
   try {
-    const tickets = await Ticket.find({ created_by: req.user.id });
-    res.json(tickets);
+    const tickets = await Ticket.find({ created_by: req.user.id })
+      .populate("assigned_to", "name role")
+      .sort({ date_created: -1 });
+
+    return res.json(tickets);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: "Server Error" });
+    return res.status(500).json({ msg: "Server Error" });
   }
 };
 
-//Add a remark to a ticket
+// Add a remark to a ticket
 const addRemark = async (req, res) => {
   try {
     const { message } = req.body;
     if (!message) {
-      return res.status(400).json({ message: "Remark message is required." });
+      return res.status(400).json({ msg: "Remark message is required." });
+    }
+
+    if (!isValidObjectId(req.params.id)) {
+      return res.status(400).json({ msg: "Invalid ticket id" });
     }
 
     const ticket = await Ticket.findById(req.params.id);
-    if (!ticket) {
-      return res.status(404).json({ message: "Ticket not found" });
-    }
+    if (!ticket) return res.status(404).json({ msg: "Ticket not found" });
 
-    // Authorization: Ensure the user owns the ticket or is a technician
     if (req.user.role === "user" && ticket.created_by.toString() !== req.user.id) {
-      return res.status(403).json({ message: "Access denied." });
+      return res.status(403).json({ msg: "Access denied." });
     }
 
     const newRemark = new Remark({
@@ -70,93 +77,77 @@ const addRemark = async (req, res) => {
     });
 
     await newRemark.save();
-
     ticket.remarks.push(newRemark._id);
     await ticket.save();
 
-    // Populate author details for the frontend
     const populatedRemark = await Remark.findById(newRemark._id).populate("author", "name role");
-
-    res.status(201).json(populatedRemark);
+    return res.status(201).json(populatedRemark);
   } catch (error) {
     console.error("Error adding remark:", error);
-    res.status(500).json({ message: "Server Error" });
+    return res.status(500).json({ msg: "Server Error" });
   }
 };
 
-// @desc    Get a single ticket by its MongoDB _id
-// @route   GET /api/tickets/id/:id
-// @access  Private
+// Get a single ticket by id
 const getTicketById = async (req, res) => {
   try {
-    const ticket = await Ticket.findById(req.params.id)
-      .populate("created_by", "name email department")
-      .populate("assigned_to", "name email")
+    const { id } = req.params;
+
+    if (!isValidObjectId(id)) {
+      return res.status(400).json({ msg: "Invalid ticket id" });
+    }
+
+    const ticket = await Ticket.findById(id)
+      .populate("created_by", "name department role")
+      .populate("assigned_to", "name role")
       .populate({
         path: "remarks",
         populate: { path: "author", select: "name role" },
       });
 
-    if (!ticket) {
-      return res.status(404).json({ message: "Ticket not found" });
-    }
+    if (!ticket) return res.status(404).json({ msg: "Ticket not found" });
 
-    // Authorization check
-    if (req.user.role === "user" && ticket.created_by._id.toString() !== req.user.id) {
-        return res.status(403).json({ message: 'Access denied' });
-    }
-
-    res.json(ticket);
-  } catch (error) {
-    console.error("Error fetching ticket by ID:", error);
-    res.status(500).json({ message: "Server Error" });
+    return res.json(ticket);
+  } catch (err) {
+    console.error(err.message);
+    return res.status(500).json({ msg: "Server Error" });
   }
 };
 
-// @desc    Update a ticket
-// @route   PUT /api/tickets/:id
-// @access  Private (Technician only)
+// Update ticket (onyl by technician)
 const updateTicket = async (req, res) => {
-  if (req.user.role !== 'technician') {
-    return res.status(403).json({ message: "Access denied. Not a technician." });
+  if (req.user.role !== "technician") {
+    return res.status(403).json({ msg: "Access denied. Not a technician." });
   }
 
   try {
+    if (!isValidObjectId(req.params.id)) {
+      return res.status(400).json({ msg: "Invalid ticket id" });
+    }
+
     const { status, priority, assigned_to, date_resolved } = req.body;
 
     const ticket = await Ticket.findById(req.params.id);
-    if (!ticket) {
-      return res.status(404).json({ message: "Ticket not found" });
-    }
+    if (!ticket) return res.status(404).json({ msg: "Ticket not found" });
 
-    // Update fields if they are provided in the request body
     if (status) ticket.status = status;
     if (priority) ticket.priority = priority;
-    
-    // Handle assigned_to: set to null if empty string, otherwise update
-    if (assigned_to !== undefined) {
-        ticket.assigned_to = assigned_to === '' ? null : assigned_to;
-    }
-
-    if (date_resolved) {
-      ticket.date_resolved = date_resolved;
-    }
+    if (assigned_to !== undefined) ticket.assigned_to = assigned_to === "" ? null : assigned_to;
+    if (date_resolved) ticket.date_resolved = date_resolved;
 
     const updatedTicket = await ticket.save();
-    res.json(updatedTicket);
+    return res.json(updatedTicket);
   } catch (error) {
     console.error("Error updating ticket:", error);
-    res.status(500).json({ message: "Server Error" });
+    return res.status(500).json({ msg: "Server Error" });
   }
 };
 
-// @desc    Get all tickets
-// @route   GET /api/tickets/all
-// @access  Private (Technician only)
+// Get all tickets (technician)
 const getAllTickets = async (req, res) => {
   try {
     if (req.user.role !== "technician") {
-      return res.status(403).json({ message: "Access denied. Not a technician." });
+      return res.status(403).json({ msg: "Access denied. Not a technician." });
     }
 
     const tickets = await Ticket.find({})
@@ -164,14 +155,12 @@ const getAllTickets = async (req, res) => {
       .populate("created_by", "name email department")
       .sort({ date_created: -1 });
 
-    res.json(tickets);
-
+    return res.json(tickets);
   } catch (error) {
     console.error("Error fetching all tickets:", error);
-    res.status(500).json({ message: "Server error while fetching tickets." });
+    return res.status(500).json({ msg: "Server error while fetching tickets." });
   }
 };
-
 
 module.exports = {
   createTicket,

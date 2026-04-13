@@ -38,7 +38,7 @@ const ticketSchema = new mongoose.Schema({
     ref: 'User',
     required: true,
   },
-  // FIX: Define the 'remarks' field as an array of references to the 'Remark' model
+
   remarks: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Remark'
