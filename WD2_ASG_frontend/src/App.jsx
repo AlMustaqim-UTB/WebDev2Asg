@@ -1,55 +1,68 @@
-import { Routes, Route } from "react-router-dom";
-// FIX: Use a named import for AuthProvider
-import { AuthProvider } from "./auth/userAuth";
+import { Routes, Route, Navigate } from "react-router-dom";
 import Login from "./pages/auth/Login";
 import Register from "./pages/auth/Register";
 import Dashboard from "./pages/dashboard/Dashboard";
 import TicketCreate from "./pages/tickets/TicketCreate";
 import TicketDetail from "./pages/tickets/TicketDetail";
 import TicketEdit from "./pages/tickets/TicketEdit";
+import userAuth from "./auth/userAuth";
 import ProtectedRoute from "./auth/ProtectedRoute";
-import { Toaster } from "react-hot-toast";
-import Navbar from "./components/navigation/Navbar";
 
 function App() {
+  const { user, loading } = userAuth();
+
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+
   return (
-    // This provider makes the auth context available to all child routes
-    <AuthProvider>
+    <div className="App">
       <Routes>
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-        <Route path="/dashboard" element={<Dashboard />} />
+        <Route
+          path="/login"
+          element={!user ? <Login /> : <Navigate to="/" />}
+        />
+        <Route
+          path="/register"
+          element={!user ? <Register /> : <Navigate to="/" />}
+        />
 
-        {/* FIX: Add the route for ticket details */}
-        <Route path="/tickets/:id" element={<TicketDetail />} />
-
+        <Route
+          path="/"
+          element={
+            <ProtectedRoute user={user}>
+              <Dashboard />
+            </ProtectedRoute>
+          }
+        />
         <Route
           path="/tickets/new"
           element={
-            <ProtectedRoute roles={["user"]}>
+            <ProtectedRoute user={user}>
               <TicketCreate />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/tickets/:id"
+          element={
+            <ProtectedRoute user={user}>
+              <TicketDetail />
             </ProtectedRoute>
           }
         />
         <Route
           path="/tickets/:id/edit"
           element={
-            <ProtectedRoute roles={["technician"]}>
+            <ProtectedRoute user={user}>
               <TicketEdit />
             </ProtectedRoute>
           }
         />
-        <Route
-          path="/create-ticket"
-          element={
-            <ProtectedRoute roles={["technician"]}>
-              <TicketCreate />
-            </ProtectedRoute>
-          }
-        />
-        <Route path="/" element={<Login />} />
+
+        <Route path="*" element={<Navigate to={user ? "/" : "/login"} />} />
       </Routes>
-    </AuthProvider>
+    </div>
   );
 }
 

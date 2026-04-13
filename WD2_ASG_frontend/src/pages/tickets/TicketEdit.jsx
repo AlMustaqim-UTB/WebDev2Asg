@@ -141,7 +141,6 @@ export default function TicketEdit() {
               <option value="Open">Open</option>
               <option value="In Progress">In Progress</option>
               <option value="Resolved">Resolved</option>
-              <option value="Closed">Closed</option>
             </select>
           </DetailRow>
 
@@ -178,22 +177,25 @@ export default function TicketEdit() {
           <DetailRow label="Date created">
             {new Date(ticket.date_created).toLocaleDateString()}
           </DetailRow>
+
+          {/* Move the buttons inside the form */}
+          <div className="mt-6 flex flex-col md:flex-row gap-3">
+            <button
+              type="submit"
+              className="bg-[#096BAA] hover:opacity-90 text-white px-4 py-2 rounded w-full md:w-auto disabled:opacity-50 cursor-pointer"
+            >
+              Save Changes
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate(`/tickets/${id}`)}
+              className="bg-gray-300 hover:bg-gray-400 px-4 py-2 rounded w-full md:w-auto cursor-pointer"
+            >
+              Cancel
+            </button>
+          </div>
         </form>
-        <div className="mt-6 flex flex-col md:flex-row gap-3">
-          <button
-            type="submit"
-            className="bg-[#096BAA] hover:opacity-90 text-white px-4 py-2 rounded w-full md:w-auto disabled:opacity-50 cursor-pointer"
-          >
-            Save Changes
-          </button>
-          <button
-            type="button"
-            onClick={() => navigate(`/tickets/${id}`)}
-            className="bg-gray-300 hover:bg-gray-400 px-4 py-2 rounded w-full md:w-auto cursor-pointer"
-          >
-            Cancel
-          </button>
-        </div>
+        {/* The buttons were originally here, which is incorrect */}
       </div>
     </div>
   );

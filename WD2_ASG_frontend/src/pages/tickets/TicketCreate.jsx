@@ -1,8 +1,11 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom"; // Import useNavigate
 import DetailRow from "../../components/tickets/DetailRow";
 import Navbar from "../../components/navigation/Navbar";
+import toast from "react-hot-toast"; // Import toast for notifications
 
-export default function TicketCreate({ setPage }) {
+export default function TicketCreate() { // Remove setPage from props
+  const navigate = useNavigate(); // Initialize navigate
   const [formData, setFormData] = useState({
     title: "",
     category: "",
@@ -42,10 +45,12 @@ export default function TicketCreate({ setPage }) {
         throw new Error(errorData.msg || "Failed to create ticket");
       }
 
+      toast.success("Ticket created successfully!"); // Add success notification
       // On successful creation, navigate back to the dashboard
-      setPage("dashboard");
+      navigate("/"); // Use navigate to go to the dashboard
     } catch (err) {
       setError(err.message);
+      toast.error(err.message); // Add error notification
     } finally {
       setSubmitting(false);
     }
@@ -116,7 +121,7 @@ export default function TicketCreate({ setPage }) {
           </button>
 
           <button
-            onClick={() => setPage("dashboard")}
+            onClick={() => navigate("/")} // Use navigate to go back
             className="bg-gray-300 hover:bg-gray-400 px-4 py-2 rounded w-full md:w-auto cursor-pointer"
           >
             Cancel
