@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../auth/userAuth";
+import toast from "react-hot-toast";
 
 const API = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
@@ -40,8 +41,13 @@ export default function Register() {
       // Keep auth context in sync immediately
       await login(formData.email, formData.password);
 
-      navigate("/dashboard");
+      toast.success("Account created successfully!");
+
+      setTimeout(() => {
+        navigate("/dashboard");
+      }, 1000);
     } catch (err) {
+      toast.error(err.message || "Registration failed");
       setError(err.message || "Registration failed");
     } finally {
       setSubmitting(false);
@@ -49,66 +55,80 @@ export default function Register() {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-[#f2f2f2] p-4">
-      <form onSubmit={handleSubmit} className="bg-white rounded shadow p-8 w-full max-w-md space-y-4">
-        <h1 className="text-2xl font-bold">Register</h1>
+    <div className="flex flex-col gap-2 items-center justify-center min-h-screen bg-[#f2f2f2]">
+      <div className=" bg-white rounded shadow content-center w-full max-w-md">
+        <h1 className="text-lg text-[#e7ecef] align-middle p-4">
+          <img src="logo.png" alt="Logo" />
+        </h1>
+      </div>
+      <form
+        onSubmit={handleSubmit}
+        className="bg-white rounded shadow content-center p-8 w-full max-w-md"
+      >
+        <h1 className="text-2xl font-bold mb-4">Register</h1>
 
-        {error && <p className="text-red-500">{error}</p>}
+        {error && <p className="text-red-500 mb-4">{error}</p>}
 
         <div>
-          <label className="block mb-1">Name</label>
+          <label className="block mb-2">Name</label>
           <input
+            type="text"
             name="name"
+            placeholder="Enter Name"
             value={formData.name}
             onChange={handleChange}
-            className="border p-2 w-full"
+            className="border p-2 w-full mb-4"
             required
           />
         </div>
 
         <div>
-          <label className="block mb-1">Email</label>
+          <label className="block mb-2">Department</label>
+          <input
+            type="text"
+            name="department"
+            placeholder="Enter Email"
+            value={formData.department}
+            onChange={handleChange}
+            className="border p-2 w-full mb-4"
+            required
+          />
+        </div>
+
+        <div>
+          <label className="block mb-2">Email</label>
           <input
             type="email"
             name="email"
+            placeholder="Enter Email"
             value={formData.email}
             onChange={handleChange}
-            className="border p-2 w-full"
+            className="border p-2 w-full mb-4"
             required
           />
         </div>
 
         <div>
-          <label className="block mb-1">Password</label>
+          <label className="block mb-2">Password</label>
           <input
             type="password"
             name="password"
+            placeholder="Enter Password"
             value={formData.password}
             onChange={handleChange}
-            className="border p-2 w-full"
+            className="border p-2 w-full mb-4"
             minLength={6}
             required
           />
         </div>
 
         <div>
-          <label className="block mb-1">Department</label>
-          <input
-            name="department"
-            value={formData.department}
-            onChange={handleChange}
-            className="border p-2 w-full"
-            required
-          />
-        </div>
-
-        <div>
-          <label className="block mb-1">Role</label>
+          <label className="block mb-2">Role</label>
           <select
             name="role"
             value={formData.role}
             onChange={handleChange}
-            className="border p-2 w-full"
+            className="border p-2 w-full mb-4 cursor-pointer"
           >
             <option value="user">User</option>
             <option value="technician">Technician</option>
@@ -118,14 +138,17 @@ export default function Register() {
         <button
           type="submit"
           disabled={submitting}
-          className="bg-[#274c77] text-white px-4 py-2 w-full rounded hover:bg-[#6096ba] disabled:opacity-60"
+          className="bg-[#6096ba] text-white px-4 py-2 w-full mb-2 cursor-pointer hover:bg-[#4a7c9c] transition-colors disabled:opacity-60"
         >
           {submitting ? "Creating account..." : "Register"}
         </button>
 
         <p className="text-sm text-center">
           Already have an account?{" "}
-          <Link to="/login" className="text-blue-600 underline hover:text-blue-800">
+          <Link
+            to="/login"
+            className="text-blue-600 underline cursor-pointer hover:text-blue-800 transition-colors"
+          >
             Login
           </Link>
         </p>

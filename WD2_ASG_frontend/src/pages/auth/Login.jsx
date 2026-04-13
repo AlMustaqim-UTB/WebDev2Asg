@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../auth/userAuth";
+import toast from "react-hot-toast";
 
 export default function Login() {
   const [formData, setFormData] = useState({ email: "", password: "" });
@@ -13,8 +14,15 @@ export default function Login() {
     setError(""); // Clear previous errors
     try {
       await login(formData.email, formData.password);
-      navigate("/dashboard"); // Redirect on successful login
+      toast.success("Logged in successfully!");
+
+      // Redirect on successful login
+      setTimeout(() => {
+        navigate("/dashboard");
+      }, 1000);
     } catch (error) {
+      const msg = error.message || "Login failed";
+      toast.error(msg);
       setError(error.message); // Set error message to display to the user
       console.error("Login failed:", error.message);
     }
@@ -50,7 +58,9 @@ export default function Login() {
           className="border p-2 w-full mb-4"
           placeholder="Enter password"
           value={formData.password}
-          onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+          onChange={(e) =>
+            setFormData({ ...formData, password: e.target.value })
+          }
           required
         />
 

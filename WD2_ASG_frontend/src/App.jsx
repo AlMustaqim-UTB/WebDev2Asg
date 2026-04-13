@@ -8,16 +8,25 @@ import Dashboard from "./pages/dashboard/Dashboard";
 import TicketCreate from "./pages/tickets/TicketCreate";
 import TicketDetail from "./pages/tickets/TicketDetail";
 import TicketEdit from "./pages/tickets/TicketEdit";
+import { Toaster } from "react-hot-toast";
 
 export default function App() {
   return (
     <AuthProvider>
+      <Toaster position="top-right" />
       <Navbar />
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
 
-        <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute>
+              <Dashboard />
+            </ProtectedRoute>
+          }
+        />
         <Route
           path="/tickets/new"
           element={
@@ -34,8 +43,22 @@ export default function App() {
             </ProtectedRoute>
           }
         />
-        <Route path="/tickets/:id" element={<ProtectedRoute><TicketDetail /></ProtectedRoute>} />
-        <Route path="/edit-ticket/:id" element={<ProtectedRoute><TicketEdit /></ProtectedRoute>} />
+        <Route
+          path="/tickets/:id"
+          element={
+            <ProtectedRoute>
+              <TicketDetail />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/edit-ticket/:id"
+          element={
+            <ProtectedRoute>
+              <TicketEdit />
+            </ProtectedRoute>
+          }
+        />
 
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
