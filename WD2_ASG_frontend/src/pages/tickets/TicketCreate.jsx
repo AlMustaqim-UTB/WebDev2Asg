@@ -1,5 +1,6 @@
 import { useState } from "react";
 import DetailRow from "../../components/tickets/DetailRow";
+import Navbar from "../../components/navigation/Navbar";
 
 export default function TicketCreate({ setPage }) {
   const [formData, setFormData] = useState({
@@ -31,7 +32,7 @@ export default function TicketCreate({ setPage }) {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "authorization": `Bearer ${token}`, 
+          authorization: `Bearer ${token}`,
         },
         body: JSON.stringify(formData),
       });
@@ -51,8 +52,9 @@ export default function TicketCreate({ setPage }) {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 p-4 md:p-6">
-      <div className="max-w-4xl mx-auto">
+    <div className="min-h-screen bg-[#f2f2f2]">
+      <Navbar />
+      <div className="p-4 md:p-6 max-w-4xl mx-auto">
         {/* Page title */}
         <h1 className="text-xl md:text-2xl font-bold mb-6">Create Ticket</h1>
 
@@ -77,7 +79,7 @@ export default function TicketCreate({ setPage }) {
               name="category"
               value={category}
               onChange={handleChange}
-              className="w-full border rounded px-3 py-2"
+              className="w-full border rounded px-3 py-2 cursor-pointer"
             >
               <option value="" disabled>
                 Select category
@@ -108,14 +110,14 @@ export default function TicketCreate({ setPage }) {
           <button
             onClick={handleSubmit}
             disabled={submitting}
-            className="bg-[#096BAA] hover:opacity-90 text-white px-4 py-2 rounded w-full md:w-auto disabled:opacity-50"
+            className="bg-[#096BAA] hover:opacity-90 text-white px-4 py-2 rounded w-full md:w-auto disabled:opacity-50 cursor-pointer"
           >
             {submitting ? "Submitting..." : "Submit Ticket"}
           </button>
 
           <button
             onClick={() => setPage("dashboard")}
-            className="bg-gray-300 hover:bg-gray-400 px-4 py-2 rounded w-full md:w-auto"
+            className="bg-gray-300 hover:bg-gray-400 px-4 py-2 rounded w-full md:w-auto cursor-pointer"
           >
             Cancel
           </button>

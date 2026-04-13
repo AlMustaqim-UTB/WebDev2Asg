@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom'; // Import useNavigate
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom"; // Import useNavigate
 import TicketCard from "../../components/tickets/TicketCard";
 import TicketTable from "../../components/tickets/TicketTable";
 import StatCard from "../../components/dashboard/StatCard";
@@ -13,24 +13,26 @@ export default function TechnicianDashboard() {
   useEffect(() => {
     const fetchTickets = async () => {
       try {
-        const token = localStorage.getItem('token');
+        const token = localStorage.getItem("token");
         if (!token) {
-          throw new Error('No authentication token found');
+          throw new Error("No authentication token found");
         }
         // Using the Vite proxy for cleaner API calls
-        const response = await fetch('/api/tickets/all', {
+        const response = await fetch("/api/tickets/all", {
           headers: {
-            'Authorization': `Bearer ${token}`,
+            Authorization: `Bearer ${token}`,
           },
         });
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}));
-          throw new Error(`HTTP ${response.status}: ${errorData.message || 'Unknown error'}`);
+          throw new Error(
+            `HTTP ${response.status}: ${errorData.message || "Unknown error"}`,
+          );
         }
         const data = await response.json();
         setTickets(data);
       } catch (err) {
-        console.error('Fetch error:', err);
+        console.error("Fetch error:", err);
         setError(err.message);
       } finally {
         setLoading(false);
@@ -67,6 +69,7 @@ export default function TechnicianDashboard() {
               key={ticket._id}
               ticket={ticket}
               onSelect={handleSelect}
+              role="technician"
             />
           ))}
         </div>
