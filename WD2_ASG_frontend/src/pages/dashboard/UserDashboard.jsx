@@ -4,32 +4,36 @@ import TicketTable from "../../components/tickets/TicketTable";
 import StatCard from "../../components/dashboard/StatCard";
 import TicketCard from "../../components/tickets/TicketCard";
 
+const RAW_API = import.meta.env.VITE_API_URL || "http://localhost:5000";
+const API = RAW_API.replace(/\/+$/, "").replace(/\/api$/i, ""); // prevent /api/api
+
 export default function UserDashboard() {
   const [tickets, setTickets] = useState([]);
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
   useEffect(() => {
     const fetchTickets = async () => {
       try {
-        const token = localStorage.getItem("token");
-        if (!token) {
-          console.error("No token found");
-          return;
-        }
-        const response = await fetch("/api/tickets/mytickets", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+        setError("");
+        setLoading(true);
+
+        const response = await fetch(`${API}/api/tickets`, {
+          credentials: "include",
         });
 
+        const data = await response.json().catch(() => []);
         if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
+          throw new Error(data?.msg || `HTTP error! status: ${response.status}`);
         }
 
-        const data = await response.json();
-        setTickets(data);
-      } catch (error) {
-        console.error("Error fetching tickets:", error);
+        setTickets(Array.isArray(data) ? data : []);
+      } catch (err) {
+        console.error("Error fetching tickets:", err);
+        setError(err.message || "Failed to fetch tickets");
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -41,6 +45,9 @@ export default function UserDashboard() {
   };
 
   const openCount = tickets.filter((t) => t.status === "Open").length;
+
+  if (loading) return <div className="p-4 md:p-6 max-w-7xl mx-auto">Loading...</div>;
+  if (error) return <div className="p-4 md:p-6 max-w-7xl mx-auto text-red-500">{error}</div>;
 
   return (
     <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-6">
@@ -58,7 +65,7 @@ export default function UserDashboard() {
               key={ticket._id}
               ticket={ticket}
               onSelect={() => handleSelect(ticket._id)}
-              role={"user"}
+              role="user"
             />
           ))}
         </div>

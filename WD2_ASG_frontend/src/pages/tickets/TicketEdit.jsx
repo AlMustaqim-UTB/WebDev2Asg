@@ -1,14 +1,16 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import userAuth from "../../auth/userAuth";
-import Navbar from "../../components/navigation/Navbar";
+import { useAuth } from "../../auth/userAuth";
 import DetailRow from "../../components/tickets/DetailRow";
-import StatusBadge from "../../components/tickets/StatusBadge";
+
+const RAW_API = import.meta.env.VITE_API_URL || "http://localhost:5000";
+const API = RAW_API.replace(/\/+$/, "").replace(/\/api$/i, "");
 
 export default function TicketEdit() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { user } = userAuth();
+  const { user } = useAuth();
+
   const [ticket, setTicket] = useState(null);
   const [technicians, setTechnicians] = useState([]);
   const [formData, setFormData] = useState({
@@ -23,32 +25,42 @@ export default function TicketEdit() {
     const fetchTicketAndTechnicians = async () => {
       try {
         setLoading(true);
-        const token = localStorage.getItem("token");
-        if (!token) throw new Error("Authentication token not found.");
+        setError(null);
 
-        // Fetch ticket details
-        const ticketResponse = await fetch(`/api/tickets/id/${id}`, {
-          headers: { Authorization: `Bearer ${token}` },
+        const ticketResponse = await fetch(`${API}/api/tickets/id/${id}`, {
+          credentials: "include",
         });
-        if (!ticketResponse.ok)
-          throw new Error("Failed to fetch ticket details.");
-        const ticketData = await ticketResponse.json();
+        const ticketData = await ticketResponse.json().catch(() => ({}));
+        if (!ticketResponse.ok) {
+          throw new Error(ticketData.msg || "Failed to fetch ticket details.");
+        }
+
         setTicket(ticketData);
         setFormData({
-          status: ticketData.status,
-          priority: ticketData.priority,
-          assigned_to: ticketData.assigned_to?._id || "",
+          status: ticketData.status || "Open",
+          priority: ticketData.priority || "Low",
+          assigned_to: ticketData.assigned_to?._id || ticketData.assigned_to || "",
         });
 
-        // Fetch technicians
-        const techResponse = await fetch("/api/users/technicians", {
-          headers: { Authorization: `Bearer ${token}` },
+        // Try /api/auth/technicians first, fallback /api/users/technicians
+        let techResponse = await fetch(`${API}/api/auth/technicians`, {
+          credentials: "include",
         });
-        if (!techResponse.ok) throw new Error("Failed to fetch technicians.");
-        const techData = await techResponse.json();
-        setTechnicians(techData);
+
+        if (!techResponse.ok) {
+          techResponse = await fetch(`${API}/api/users/technicians`, {
+            credentials: "include",
+          });
+        }
+
+        const techData = await techResponse.json().catch(() => []);
+        if (!techResponse.ok) {
+          throw new Error("Failed to fetch technicians.");
+        }
+
+        setTechnicians(Array.isArray(techData) ? techData : []);
       } catch (err) {
-        setError(err.message);
+        setError(err.message || "Failed to load edit form.");
       } finally {
         setLoading(false);
       }
@@ -56,7 +68,7 @@ export default function TicketEdit() {
 
     if (user?.role === "technician") {
       fetchTicketAndTechnicians();
-    } else {
+    } else if (user) {
       setError("You do not have permission to edit this ticket.");
       setLoading(false);
     }
@@ -70,36 +82,30 @@ export default function TicketEdit() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Add confirmation dialog
-    if (!window.confirm("Are you sure you want to save these changes?")) {
-      return; // If user clicks 'Cancel', do nothing
-    }
+    if (!window.confirm("Are you sure you want to save these changes?")) return;
 
     try {
-      const token = localStorage.getItem("token");
       const updateData = { ...formData };
 
       if (formData.status === "Resolved" && ticket.status !== "Resolved") {
         updateData.date_resolved = new Date().toISOString();
       }
 
-      const response = await fetch(`/api/tickets/${id}`, {
+      const response = await fetch(`${API}/api/tickets/${id}`, {
         method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify(updateData),
       });
 
+      const data = await response.json().catch(() => ({}));
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to update ticket.");
+        throw new Error(data.msg || data.message || "Failed to update ticket.");
       }
 
       navigate(`/tickets/${id}`);
     } catch (err) {
-      setError(err.message);
+      setError(err.message || "Failed to update ticket.");
     }
   };
 
@@ -107,25 +113,23 @@ export default function TicketEdit() {
   if (error) return <div className="text-red-500 p-4">{error}</div>;
   if (!ticket) return <div>Ticket not found.</div>;
 
+  const ticketKey = ticket.key || (ticket._id ? `#${String(ticket._id).slice(-6)}` : "N/A");
+  const createdDate = ticket.date_created || ticket.createdAt;
+
   return (
     <div className="min-h-screen bg-[#f2f2f2]">
-      <Navbar />
       <div className="p-4 md:p-6 max-w-2xl mx-auto">
-        <h1 className="text-xl md:text-2xl font-bold mb-6">
-          Edit Ticket {ticket.key}
-        </h1>
+        <h1 className="text-xl md:text-2xl font-bold mb-6">Edit Ticket {ticketKey}</h1>
+
         <form
+          id="ticket-edit-form"
           onSubmit={handleSubmit}
           className="bg-white rounded-lg shadow-sm p-4 md:p-6 space-y-6"
         >
           <DetailRow label="Title">{ticket.title}</DetailRow>
           <DetailRow label="Category">{ticket.category}</DetailRow>
-          <DetailRow label="Department">
-            {ticket.created_by?.department || "N/A"}
-          </DetailRow>
-          <DetailRow label="Reported by">
-            {ticket.created_by?.name || "Unknown"}
-          </DetailRow>
+          <DetailRow label="Department">{ticket.created_by?.department || "N/A"}</DetailRow>
+          <DetailRow label="Reported by">{ticket.created_by?.name || "Unknown"}</DetailRow>
           <DetailRow label="Description">
             <span className="whitespace-pre-line">{ticket.description}</span>
           </DetailRow>
@@ -141,6 +145,7 @@ export default function TicketEdit() {
               <option value="Open">Open</option>
               <option value="In Progress">In Progress</option>
               <option value="Resolved">Resolved</option>
+              <option value="Closed">Closed</option>
             </select>
           </DetailRow>
 
@@ -174,28 +179,28 @@ export default function TicketEdit() {
               ))}
             </select>
           </DetailRow>
-          <DetailRow label="Date created">
-            {new Date(ticket.date_created).toLocaleDateString()}
-          </DetailRow>
 
-          {/* Move the buttons inside the form */}
-          <div className="mt-6 flex flex-col md:flex-row gap-3">
-            <button
-              type="submit"
-              className="bg-[#096BAA] hover:opacity-90 text-white px-4 py-2 rounded w-full md:w-auto disabled:opacity-50 cursor-pointer"
-            >
-              Save Changes
-            </button>
-            <button
-              type="button"
-              onClick={() => navigate(`/tickets/${id}`)}
-              className="bg-gray-300 hover:bg-gray-400 px-4 py-2 rounded w-full md:w-auto cursor-pointer"
-            >
-              Cancel
-            </button>
-          </div>
+          <DetailRow label="Date created">
+            {createdDate ? new Date(createdDate).toLocaleDateString() : "N/A"}
+          </DetailRow>
         </form>
-        {/* The buttons were originally here, which is incorrect */}
+
+        <div className="mt-6 flex flex-col md:flex-row gap-3">
+          <button
+            type="submit"
+            form="ticket-edit-form"
+            className="bg-[#096BAA] hover:opacity-90 text-white px-4 py-2 rounded w-full md:w-auto disabled:opacity-50 cursor-pointer"
+          >
+            Save Changes
+          </button>
+          <button
+            type="button"
+            onClick={() => navigate(`/tickets/${id}`)}
+            className="bg-gray-300 hover:bg-gray-400 px-4 py-2 rounded w-full md:w-auto cursor-pointer"
+          >
+            Cancel
+          </button>
+        </div>
       </div>
     </div>
   );

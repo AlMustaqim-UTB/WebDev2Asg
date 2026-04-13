@@ -1,23 +1,29 @@
-import { useState, useRef, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import userAuth from "../../auth/userAuth";
-import { Menu, User, X, LogOut } from "lucide-react";
-import UserNav from "./UserNav";
+import { useEffect, useRef, useState } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Menu, X, User, LogOut } from "lucide-react";
+import { useAuth } from "../../auth/userAuth";
 import TechnicianNav from "./TechnicianNav";
+import UserNav from "./UserNav";
 
 export default function Navbar() {
-  const { user, logout } = userAuth();
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
 
-  const handleLogout = () => {
-    logout();
+  const isAuthPage =
+    location.pathname === "/login" || location.pathname === "/register";
+
+  const handleLogout = async () => {
+    await logout();
+    setDropdownOpen(false);
+    setMobileOpen(false);
     navigate("/login");
   };
 
-  // Close desktop dropdown when clicking outside
+  // Hooks must always run, before conditional returns
   useEffect(() => {
     function handleClickOutside(e) {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
@@ -28,7 +34,10 @@ export default function Navbar() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const navLinks = user.role === "user" ? <UserNav /> : <TechnicianNav />;
+  if (isAuthPage || !user) return null;
+
+  const renderNavLinks = () =>
+    user.role === "technician" ? <TechnicianNav /> : <UserNav />;
 
   return (
     <nav className="bg-[#274c77] text-[#e7ecef] px-4 py-4">
@@ -39,7 +48,7 @@ export default function Navbar() {
 
         {/* Desktop Menu */}
         <div className="hidden md:flex items-center space-x-6">
-          {navLinks}
+          {renderNavLinks()}
           {user && (
             <div className="relative" ref={dropdownRef}>
               <button
@@ -81,7 +90,7 @@ export default function Navbar() {
         `}
         >
           <div className="space-y-4">
-            {navLinks}
+            {renderNavLinks()}
 
             <div className="border-t border-[#6096ba] pt-3 space-y-2">
               <div className="flex items-center">
