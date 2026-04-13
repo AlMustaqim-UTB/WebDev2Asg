@@ -4,6 +4,8 @@ import TicketCard from "../../components/tickets/TicketCard";
 import TicketTable from "../../components/tickets/TicketTable";
 import StatCard from "../../components/dashboard/StatCard";
 
+
+//const API = ""; //API route for cloud hosting
 const RAW_API = import.meta.env.VITE_API_URL || "http://localhost:5000";
 const API = RAW_API.replace(/\/+$/, "").replace(/\/api$/i, ""); // prevent /api/api
 

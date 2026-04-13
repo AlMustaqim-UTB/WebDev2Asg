@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../auth/userAuth";
 
+//const API = ""; //API route for cloud hosting
 const API = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 export default function Register() {

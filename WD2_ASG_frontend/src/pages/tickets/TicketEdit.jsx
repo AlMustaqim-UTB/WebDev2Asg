@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "../../auth/userAuth";
 import DetailRow from "../../components/tickets/DetailRow";
 
+//const API = ""; //API route for cloud hosting
 const RAW_API = import.meta.env.VITE_API_URL || "http://localhost:5000";
 const API = RAW_API.replace(/\/+$/, "").replace(/\/api$/i, "");
 

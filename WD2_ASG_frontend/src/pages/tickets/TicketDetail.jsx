@@ -5,6 +5,7 @@ import StatusBadge from "../../components/tickets/StatusBadge";
 import PriorityBadge from "../../components/tickets/PriorityBadge";
 import { useAuth } from "../../auth/userAuth";
 
+//const API = ""; //API route for cloud hosting
 const RAW_API = import.meta.env.VITE_API_URL || "http://localhost:5000";
 const API = RAW_API.replace(/\/+$/, "").replace(/\/api$/i, "");
 
