@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "../../auth/userAuth";
 import DetailRow from "../../components/tickets/DetailRow";
+import toast from "react-hot-toast";
 
 const RAW_API = import.meta.env.VITE_API_URL || "http://localhost:5000";
 const API = RAW_API.replace(/\/+$/, "").replace(/\/api$/i, "");
@@ -39,7 +40,8 @@ export default function TicketEdit() {
         setFormData({
           status: ticketData.status || "Open",
           priority: ticketData.priority || "Low",
-          assigned_to: ticketData.assigned_to?._id || ticketData.assigned_to || "",
+          assigned_to:
+            ticketData.assigned_to?._id || ticketData.assigned_to || "",
         });
 
         // Try /api/auth/technicians first, fallback /api/users/technicians
@@ -103,9 +105,15 @@ export default function TicketEdit() {
         throw new Error(data.msg || data.message || "Failed to update ticket.");
       }
 
-      navigate(`/tickets/${id}`);
+      toast.success("Ticket updated successfully");
+
+      setTimeout(() => {
+        navigate(`/tickets/${id}`);
+      }, 1000);
     } catch (err) {
       setError(err.message || "Failed to update ticket.");
+      toast.error(msg);
+      setError(msg);
     }
   };
 
@@ -113,13 +121,16 @@ export default function TicketEdit() {
   if (error) return <div className="text-red-500 p-4">{error}</div>;
   if (!ticket) return <div>Ticket not found.</div>;
 
-  const ticketKey = ticket.key || (ticket._id ? `#${String(ticket._id).slice(-6)}` : "N/A");
+  const ticketKey =
+    ticket.key || (ticket._id ? `#${String(ticket._id).slice(-6)}` : "N/A");
   const createdDate = ticket.date_created || ticket.createdAt;
 
   return (
     <div className="min-h-screen bg-[#f2f2f2]">
       <div className="p-4 md:p-6 max-w-2xl mx-auto">
-        <h1 className="text-xl md:text-2xl font-bold mb-6">Edit Ticket {ticketKey}</h1>
+        <h1 className="text-xl md:text-2xl font-bold mb-6">
+          Edit Ticket {ticketKey}
+        </h1>
 
         <form
           id="ticket-edit-form"
@@ -128,8 +139,12 @@ export default function TicketEdit() {
         >
           <DetailRow label="Title">{ticket.title}</DetailRow>
           <DetailRow label="Category">{ticket.category}</DetailRow>
-          <DetailRow label="Department">{ticket.created_by?.department || "N/A"}</DetailRow>
-          <DetailRow label="Reported by">{ticket.created_by?.name || "Unknown"}</DetailRow>
+          <DetailRow label="Department">
+            {ticket.created_by?.department || "N/A"}
+          </DetailRow>
+          <DetailRow label="Reported by">
+            {ticket.created_by?.name || "Unknown"}
+          </DetailRow>
           <DetailRow label="Description">
             <span className="whitespace-pre-line">{ticket.description}</span>
           </DetailRow>
