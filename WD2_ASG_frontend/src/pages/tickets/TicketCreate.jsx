@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import DetailRow from "../../components/tickets/DetailRow";
+import toast from "react-hot-toast";
 
 //const API = ""; //API route for cloud hosting
 const RAW_API = import.meta.env.VITE_API_URL || "http://localhost:5000";
@@ -50,9 +51,17 @@ export default function TicketCreate({ setPage }) {
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.msg || "Failed to create ticket");
 
+      toast.success("Ticket created successfully");
+
+      setTimeout(() => {
+        goDashboard();
+      }, 1000);
+
       goDashboard();
     } catch (err) {
       setError(err.message || "Failed to create ticket");
+      setError(msg);
+      toast.error(msg);
     } finally {
       setSubmitting(false);
     }
