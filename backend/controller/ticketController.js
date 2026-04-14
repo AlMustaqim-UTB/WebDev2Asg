@@ -88,6 +88,41 @@ const addRemark = async (req, res) => {
   }
 };
 
+const deleteRemark = async (req, res) => {
+  try {
+    const { id: ticketId, remarkId } = req.params;
+
+    // check if the remark objectID is valid
+    if (!isValidObjectId(ticketId) || !isValidObjectId(remarkId)) {
+      return res.status(400).json({ msg: "Invalid ID provided." });
+    }
+
+    // Only technicians can delete remarks
+    // if (req.user.role !== "technician") {
+    //   return res.status(403).json({ msg: "Access denied. Not a technician." });
+    // }
+
+    // Find the remark and delete it
+    const remark = await Remark.findById(remarkId);
+    if (!remark) {
+      return res.status(404).json({ msg: "Remark not found." });
+    }
+    await remark.deleteOne();
+
+    // Pull the remark reference from the ticket's remarks array
+    await Ticket.findByIdAndUpdate(
+      ticketId,
+      { $pull: { remarks: remarkId } },
+      { new: true }
+    );
+
+    return res.json({ msg: "Remark deleted successfully." });
+  } catch (error) {
+    console.error("Error deleting remark:", error);
+    return res.status(500).json({ msg: "Server Error" });
+  }
+};
+
 // Get a single ticket by id
 const getTicketById = async (req, res) => {
   try {
@@ -114,7 +149,7 @@ const getTicketById = async (req, res) => {
   }
 };
 
-// Update ticket (onyl by technician)
+// Update ticket (only by technician)
 const updateTicket = async (req, res) => {
   if (req.user.role !== "technician") {
     return res.status(403).json({ msg: "Access denied. Not a technician." });
@@ -166,6 +201,7 @@ module.exports = {
   createTicket,
   getUserTickets,
   addRemark,
+  deleteRemark,
   getTicketById,
   updateTicket,
   getAllTickets,

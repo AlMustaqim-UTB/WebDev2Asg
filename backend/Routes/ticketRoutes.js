@@ -5,6 +5,7 @@ const {
   createTicket,
   getUserTickets,
   addRemark,
+  deleteRemark ,
   getTicketById,
   updateTicket,
   getAllTickets,
@@ -31,6 +32,9 @@ router.get("/id/:id", auth, getTicketById);
 
 // Add a remark/comment to a specific ticket.
 router.post("/:id/remarks", auth, addRemark);
+
+//Delete a remark from a ticket
+router.delete("/:id/remarks/:remarkId", auth, deleteRemark);
 
 // Update ticket status/priority/assignment (technician only).
 router.put("/:id", auth, technicianOnly, updateTicket);
