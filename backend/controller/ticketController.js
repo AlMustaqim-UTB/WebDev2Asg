@@ -96,12 +96,6 @@ const deleteRemark = async (req, res) => {
     if (!isValidObjectId(ticketId) || !isValidObjectId(remarkId)) {
       return res.status(400).json({ msg: "Invalid ID provided." });
     }
-
-    // Only technicians can delete remarks
-    // if (req.user.role !== "technician") {
-    //   return res.status(403).json({ msg: "Access denied. Not a technician." });
-    // }
-
     // Find the remark and delete it
     const remark = await Remark.findById(remarkId);
     if (!remark) {
