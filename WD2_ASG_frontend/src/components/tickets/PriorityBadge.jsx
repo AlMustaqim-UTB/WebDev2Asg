@@ -1,3 +1,4 @@
+// This component displays a visual label (badge) for a ticket's priority
 export default function PriorityBadge({ priority }) {
   const styles = {
     Low: "bg-gray-100 text-gray-700",

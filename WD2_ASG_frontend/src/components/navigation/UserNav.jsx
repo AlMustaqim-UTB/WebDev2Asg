@@ -1,8 +1,10 @@
 import { NavLink } from "react-router-dom";
 
+// Navigation component is only show for normal users
 export default function UserNav({}) {
   return (
     <div className="flex flex-col md:flex-row gap-4 items-start">
+      {/* Dashboard link/button */}
       <NavLink
         to="/dashboard"
         className={({ isActive }) =>
@@ -13,6 +15,7 @@ export default function UserNav({}) {
         Dashboard
       </NavLink>
 
+      {/* Create new ticket link/button */}
       <NavLink
         to="/tickets/new"
         className={({ isActive }) =>

@@ -1,15 +1,18 @@
-import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { useAuth } from "../../auth/userAuth";
-import toast from "react-hot-toast";
+import { useState } from "react"; // React hook
+import { Link, useNavigate } from "react-router-dom"; // React router helpers
+import { useAuth } from "../../auth/userAuth"; // Auth context hook
+import toast from "react-hot-toast"; // Popups/notifications for user feedback
 
-//const API = ""; //API route for cloud hosting
+// API base URL
 const API = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
-export default function Register() {
-  const navigate = useNavigate();
-  const { login } = useAuth();
+// Register Page - Responsible for user account registration
 
+export default function Register() {
+  const navigate = useNavigate(); // Used to redirect user
+  const { login } = useAuth(); // Access login function from authentication context (used for auto-login)
+
+  // Form state for registration inputs
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -17,18 +20,21 @@ export default function Register() {
     role: "user",
     department: "",
   });
-  const [error, setError] = useState("");
-  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState(""); // Add error state
+  const [submitting, setSubmitting] = useState(false); // Submission state
 
+  // Updates form state dynamically based on input name
   const handleChange = (e) =>
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
 
+  // Handles user registration
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
     setSubmitting(true);
 
     try {
+      // Sends registration request to backend
       const res = await fetch(`${API}/api/auth/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -36,20 +42,21 @@ export default function Register() {
         body: JSON.stringify(formData),
       });
 
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.msg || "Registration failed");
+      const data = await res.json().catch(() => ({})); // Parses response safely
 
-      // Keep auth context in sync immediately
-      await login(formData.email, formData.password);
+      if (!res.ok) throw new Error(data.msg || "Registration failed"); // Handles failed response
 
-      toast.success("Account created successfully!");
+      await login(formData.email, formData.password); // Automatically log in user after successful registration
 
+      toast.success("Account created successfully!"); // Success feedback using toast popup
+
+      // Delay navigation briefly then redirect user to dashboard
       setTimeout(() => {
         navigate("/dashboard");
       }, 1000);
     } catch (err) {
-      toast.error(err.message || "Registration failed");
-      setError(err.message || "Registration failed");
+      toast.error(err.message || "Registration failed"); // Error feedback using toast popup
+      setError(err.message || "Registration failed"); // Set error message to display to the user
     } finally {
       setSubmitting(false);
     }
@@ -57,19 +64,24 @@ export default function Register() {
 
   return (
     <div className="flex flex-col gap-2 items-center justify-center min-h-screen bg-[#f2f2f2]">
+      {/* Logo */}
       <div className=" bg-white rounded shadow content-center w-full max-w-md">
         <h1 className="text-lg text-[#e7ecef] align-middle p-4">
           <img src="logo.png" alt="Logo" />
         </h1>
       </div>
+
+      {/* Registration Form */}
       <form
         onSubmit={handleSubmit}
         className="bg-white rounded shadow content-center p-8 w-full max-w-md"
       >
+        {/* Title */}
         <h1 className="text-2xl font-bold mb-4">Register</h1>
-
+        {/* Error message */}
         {error && <p className="text-red-500 mb-4">{error}</p>}
 
+        {/* Name input */}
         <div>
           <label className="block mb-2">Name</label>
           <input
@@ -83,6 +95,7 @@ export default function Register() {
           />
         </div>
 
+        {/* Department input */}
         <div>
           <label className="block mb-2">Department</label>
           <input
@@ -96,6 +109,7 @@ export default function Register() {
           />
         </div>
 
+        {/* Email input */}
         <div>
           <label className="block mb-2">Email</label>
           <input
@@ -109,6 +123,7 @@ export default function Register() {
           />
         </div>
 
+        {/* Password input */}
         <div>
           <label className="block mb-2">Password</label>
           <input
@@ -123,6 +138,7 @@ export default function Register() {
           />
         </div>
 
+        {/* Role dropdown selection input */}
         <div>
           <label className="block mb-2">Role</label>
           <select
@@ -136,6 +152,7 @@ export default function Register() {
           </select>
         </div>
 
+        {/* Register button */}
         <button
           type="submit"
           disabled={submitting}
@@ -144,6 +161,7 @@ export default function Register() {
           {submitting ? "Creating account..." : "Register"}
         </button>
 
+        {/* Navigation link to login page */}
         <p className="text-sm text-center">
           Already have an account?{" "}
           <Link

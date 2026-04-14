@@ -1,3 +1,5 @@
+// A reusable form component for viewing or creating ticket details
+
 export default function TicketForm({ readonly }) {
   return (
     <>

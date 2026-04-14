@@ -1,3 +1,4 @@
+// This component displays a visual status indicator for a ticket
 export default function StatusBadge({ status }) {
   const styles = {
     Open: "bg-red-100 text-red-700",
