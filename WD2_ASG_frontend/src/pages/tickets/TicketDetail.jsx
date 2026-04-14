@@ -201,42 +201,6 @@ export default function TicketDetail() {
           </button>
         </div>
 
-          {/* remarks area */}
-          <div className="space-y-4 mt-5">
-            {ticket.remarks && ticket.remarks.length > 0 ? (
-              ticket.remarks.map((remark) => {
-                const remarkDate = remark.date || remark.createdAt;
-                return (
-                  <div key={remark._id} className="border-l-4 border-[#6096ba] pl-3 py-2">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <p className="text-sm">{remark.message}</p>
-                        <p className="text-xs text-[#8b8c89] mt-1">
-                          {remark.author?.name || "Unknown User"} ({remark.author?.role || "user"}) ·{" "}
-                          {remarkDate ? new Date(remarkDate).toLocaleString() : "N/A"}
-                        </p>
-                      </div>
-                      {/* remark delete button */}
-                      {isTechnician && (
-                        <button
-                          onClick={() => handleDeleteRemark(remark._id)}
-                          className="bg-red-500 text-red-100 text-xs rounded ml-4 px-3 py-2 rounded cursor-pointer hover:bg-red-300"
-                        >
-                          <Trash2 size={20}/>
-                        </button>
-                        )}
-                    </div>
-                  </div>
-                );
-              })
-            )
-            
-            : (
-              <p className="text-gray-500">No remarks yet.</p>
-            )}
-            
-          </div>
-
           <div className="mt-6 bg-white rounded-lg shadow-sm p-4 md:p-6">
           <h2 className="text-lg font-semibold mb-4">Remarks</h2>
 
@@ -260,18 +224,29 @@ export default function TicketDetail() {
               ticket.remarks.map((remark) => {
                 const remarkDate = remark.date || remark.createdAt;
                 return (
-                  <div
-                    key={remark._id}
-                    className="border-l-4 border-[#6096ba] pl-3"
-                  >
-                    <p className="text-sm">{remark.message}</p>
-                    <p className="text-xs text-[#8b8c89] mt-1">
-                      {remark.author?.name || "Unknown User"} (
-                      {remark.author?.role || "user"}) ·{" "}
-                      {remarkDate
-                        ? new Date(remarkDate).toLocaleString()
-                        : "N/A"}
-                    </p>
+                  <div key={remark._id} className="border-l-4 border-[#6096ba] pl-3">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <p className="text-sm">{remark.message}</p>
+                        <p className="text-xs text-[#8b8c89] mt-1">
+                          {remark.author?.name || "Unknown User"} (
+                          {remark.author?.role || "user"}) ·{" "}
+                          {remarkDate
+                            ? new Date(remarkDate).toLocaleString()
+                            : "N/A"}
+                        </p>
+                      </div>
+                      {/* remark delete button */}
+                      {isTechnician && (
+                        <button
+                          onClick={() => handleDeleteRemark(remark._id)}
+                          className="bg-red-500 text-red-100 text-xs rounded ml-4 px-3 py-2 rounded cursor-pointer hover:bg-red-300"
+                        >
+                          <Trash2 size={20}/>
+                        </button>
+                        )}
+                    </div>
+                    
                   </div>
                 );
               })
