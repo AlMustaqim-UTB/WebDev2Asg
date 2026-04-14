@@ -5,11 +5,12 @@ import StatusBadge from "../../components/tickets/StatusBadge";
 import PriorityBadge from "../../components/tickets/PriorityBadge";
 import { useAuth } from "../../auth/userAuth";
 import toast from "react-hot-toast";
-import { Trash2  } from "lucide-react";
+import { Trash2 } from "lucide-react";
 
-
-//const API = ""; //API route for cloud hosting
+// API base URL
 const RAW_API = import.meta.env.VITE_API_URL || "http://localhost:5000";
+
+// Clean API URL to avoid issues like // or /api/api
 const API = RAW_API.replace(/\/+$/, "").replace(/\/api$/i, "");
 
 export default function TicketDetail() {
@@ -21,6 +22,7 @@ export default function TicketDetail() {
   const [error, setError] = useState(null);
   const [newRemark, setNewRemark] = useState("");
 
+  // Fetch ticket details
   useEffect(() => {
     if (id === "new") {
       navigate("/create-ticket", { replace: true });
@@ -32,11 +34,14 @@ export default function TicketDetail() {
         setLoading(true);
         setError(null);
 
+        // Fetch ticket details from backend
         const response = await fetch(`${API}/api/tickets/id/${id}`, {
-          credentials: "include",
+          credentials: "include", // include auth cookies
         });
 
         const data = await response.json().catch(() => ({}));
+
+        // Handle backend errors
         if (!response.ok) {
           throw new Error(
             data.msg ||
@@ -45,10 +50,13 @@ export default function TicketDetail() {
           );
         }
 
+        // Save ticket data to state
         setTicket(data);
       } catch (err) {
+        // Store readable error message
         setError(err.message || "Failed to fetch ticket");
       } finally {
+        // Stop loading spinner
         setLoading(false);
       }
     };
@@ -56,12 +64,15 @@ export default function TicketDetail() {
     if (id) fetchTicket();
   }, [id, navigate]);
 
+  // Add a new remark to the ticket
   const handleAddRemark = async () => {
+    // Prevent empty remarks or missing ticket
     if (!newRemark.trim() || !ticket?._id) return;
 
     try {
       setError(null);
 
+      // Send new remark to backend
       const response = await fetch(`${API}/api/tickets/${ticket._id}/remarks`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -70,42 +81,54 @@ export default function TicketDetail() {
       });
 
       const data = await response.json().catch(() => ({}));
+
+      // Handle backend errors
       if (!response.ok) {
         throw new Error(data.msg || data.message || "Failed to add remark");
       }
 
+      // Refresh ticket to show newly added remark
       const refresh = await fetch(`${API}/api/tickets/id/${ticket._id}`, {
         credentials: "include",
       });
       const refreshed = await refresh.json().catch(() => ({}));
       if (refresh.ok) setTicket(refreshed);
 
+      // Clear textarea after successful submission
       setNewRemark("");
 
       toast.success("Remark added successfully");
     } catch (err) {
+      // Show error if adding remark fails
       setError(err.message || "Failed to add remark");
       toast.error(msg);
       setError(msg);
     }
   };
 
-  //delete a remark event handler
+  // Delete a remark event handler
   //'fetch' a delete request to the delete remark API endpoint on the backend
   const handleDeleteRemark = async (remarkId) => {
     if (!ticket?._id || !remarkId) return;
 
-    if (!window.confirm("Are you sure you want to delete this remark? This action cannot be undone.")) {
+    if (
+      !window.confirm(
+        "Are you sure you want to delete this remark? This action cannot be undone.",
+      )
+    ) {
       return; // Stop the function if the user clicks "Cancel"
     }
 
     try {
       setError(null);
 
-      const response = await fetch(`${API}/api/tickets/${ticket._id}/remarks/${remarkId}`, {
-        method: "DELETE",
-        credentials: "include",
-      });
+      const response = await fetch(
+        `${API}/api/tickets/${ticket._id}/remarks/${remarkId}`,
+        {
+          method: "DELETE",
+          credentials: "include",
+        },
+      );
 
       if (!response.ok) {
         const data = await response.json().catch(() => ({}));
@@ -118,33 +141,41 @@ export default function TicketDetail() {
       });
       const refreshed = await refresh.json().catch(() => ({}));
       if (refresh.ok) setTicket(refreshed);
-      
     } catch (err) {
       setError(err.message || "Failed to delete remark");
     }
   };
 
+  // Loading state
   if (loading) return <div>Loading ticket details...</div>;
+  // Error state
   if (error) return <div className="text-red-500 p-4">Error: {error}</div>;
+  // Ticket not found state
   if (!ticket) return <div>Ticket not found</div>;
 
+  // Check if current user is a technician
   const isTechnician = user?.role === "technician";
+  // Generate ticket key fallback
   const ticketKey =
     ticket.key || (ticket._id ? `#${String(ticket._id).slice(-6)}` : "N/A");
+  // Normalize date fields
   const createdDate = ticket.date_created || ticket.createdAt;
   const resolvedDate = ticket.date_resolved || ticket.resolvedAt;
 
   return (
     <div className="min-h-screen bg-[#f2f2f2]">
       <div className="p-4 max-w-4xl mx-auto">
+        {/* Heading */}
         <h1 className="text-xl md:text-2xl font-bold mb-6">
           Ticket {ticketKey}
         </h1>
+        {/* Ticket details card */}
         <div className="bg-white rounded-lg shadow-sm p-4 md:p-6 space-y-6">
           <DetailRow label="Title">{ticket.title}</DetailRow>
 
           <DetailRow label="Category">{ticket.category}</DetailRow>
 
+          {/* Technician-only fields */}
           {isTechnician && (
             <DetailRow label="Department">
               {ticket.created_by?.department || "N/A"}
@@ -184,6 +215,7 @@ export default function TicketDetail() {
           )}
         </div>
 
+        {/* Action buttons */}
         <div className="mt-6 flex flex-col md:flex-row gap-3">
           {isTechnician && (
             <button
@@ -201,9 +233,11 @@ export default function TicketDetail() {
           </button>
         </div>
 
-          <div className="mt-6 bg-white rounded-lg shadow-sm p-4 md:p-6">
+        {/* Remarks section */}
+        <div className="mt-6 bg-white rounded-lg shadow-sm p-4 md:p-6">
           <h2 className="text-lg font-semibold mb-4">Remarks</h2>
 
+          {/* Add remarks input */}
           <textarea
             value={newRemark}
             onChange={(e) => setNewRemark(e.target.value)}
@@ -219,12 +253,17 @@ export default function TicketDetail() {
               Submit Remark
             </button>
           </div>
+
+          {/* Remarks list */}
           <div className="space-y-4 mt-5">
             {ticket.remarks && ticket.remarks.length > 0 ? (
               ticket.remarks.map((remark) => {
                 const remarkDate = remark.date || remark.createdAt;
                 return (
-                  <div key={remark._id} className="border-l-4 border-[#6096ba] pl-3">
+                  <div
+                    key={remark._id}
+                    className="border-l-4 border-[#6096ba] pl-3"
+                  >
                     <div className="flex justify-between items-start">
                       <div>
                         <p className="text-sm">{remark.message}</p>
@@ -236,17 +275,16 @@ export default function TicketDetail() {
                             : "N/A"}
                         </p>
                       </div>
-                      {/* remark delete button */}
+                      {/* Remarks delete button */}
                       {isTechnician && (
                         <button
                           onClick={() => handleDeleteRemark(remark._id)}
-                          className="bg-red-500 text-red-100 text-xs rounded ml-4 px-3 py-2 rounded cursor-pointer hover:bg-red-300"
+                          className="bg-red-500 text-red-100 text-xs rounded ml-4 px-3 py-2 cursor-pointer hover:bg-red-300"
                         >
-                          <Trash2 size={20}/>
+                          <Trash2 size={20} />
                         </button>
-                        )}
+                      )}
                     </div>
-                    
                   </div>
                 );
               })

@@ -53,21 +53,25 @@ export default function TechnicianDashboard() {
   };
 
   if (loading) return <div className="p-4">Loading tickets...</div>; // Loading UI while fetching data
-  if (error) return <div className="p-4 text-red-500">Error: {error}</div>; // AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+  if (error) return <div className="p-4 text-red-500">Error: {error}</div>; // Show error UI if something went wrong
 
+  // Count tickets by status (use for StatCard)
   const open = tickets.filter((t) => t.status === "Open").length;
   const inProgress = tickets.filter((t) => t.status === "In Progress").length;
 
   return (
     <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-6">
+      {/* Heading */}
       <h1 className="text-xl md:text-2xl font-bold">Technician Dashboard</h1>
 
+      {/* StatCard */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <StatCard label="Total Tickets" value={tickets.length} />
         <StatCard label="Open" value={open} />
         <StatCard label="In Progress" value={inProgress} />
       </div>
 
+      {/* Ticket list */}
       <div>
         <div className="space-y-3 md:hidden">
           {tickets.map((ticket) => (

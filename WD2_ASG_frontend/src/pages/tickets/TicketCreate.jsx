@@ -3,35 +3,44 @@ import { useNavigate } from "react-router-dom";
 import DetailRow from "../../components/tickets/DetailRow";
 import toast from "react-hot-toast";
 
-//const API = ""; //API route for cloud hosting
+// API base URL
 const RAW_API = import.meta.env.VITE_API_URL || "http://localhost:5000";
-const API = RAW_API.replace(/\/+$/, "").replace(/\/api$/i, "");
+const API = RAW_API.replace(/\/+$/, "").replace(/\/api$/i, ""); // Clean up the API URL to avoid double slashes or /api/api
 
 export default function TicketCreate({ setPage }) {
   const navigate = useNavigate();
 
+  // Stores form input values
   const [formData, setFormData] = useState({
     title: "",
     category: "",
     description: "",
   });
+
+  // Stores validation or server error messages
   const [error, setError] = useState(null);
+
+  // Prevents double submission
   const [submitting, setSubmitting] = useState(false);
 
   const { title, category, description } = formData;
 
+  // Handles input changes
   const handleChange = (e) => {
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
+  // Navigation
   const goDashboard = () => {
     if (typeof setPage === "function") setPage("dashboard");
     else navigate("/dashboard");
   };
 
+  // Submit handler
   const handleSubmit = async (e) => {
     e?.preventDefault();
 
+    // Client-side validation
     if (!title || !category || !description) {
       setError("All fields are required.");
       return;
@@ -41,6 +50,7 @@ export default function TicketCreate({ setPage }) {
     setSubmitting(true);
 
     try {
+      // API call to create ticket
       const res = await fetch(`${API}/api/tickets`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -48,6 +58,7 @@ export default function TicketCreate({ setPage }) {
         body: JSON.stringify(formData),
       });
 
+      // Response handling
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.msg || "Failed to create ticket");
 
@@ -70,8 +81,10 @@ export default function TicketCreate({ setPage }) {
   return (
     <div className="min-h-screen bg-[#f2f2f2]">
       <div className="p-4 md:p-6 max-w-4xl mx-auto">
+        {/* Title */}
         <h1 className="text-xl md:text-2xl font-bold mb-6">Create Ticket</h1>
 
+        {/* Create ticket form */}
         <form
           onSubmit={handleSubmit}
           className="bg-white rounded-lg shadow-sm p-4 md:p-6 space-y-6"
@@ -116,9 +129,11 @@ export default function TicketCreate({ setPage }) {
           </DetailRow>
         </form>
 
+        {/* Error message */}
         {error && <p className="text-red-500 mt-4">{error}</p>}
 
         <div className="mt-6 flex flex-col md:flex-row gap-3">
+          {/* Submit button */}
           <button
             onClick={handleSubmit}
             disabled={submitting}
@@ -127,6 +142,7 @@ export default function TicketCreate({ setPage }) {
             {submitting ? "Submitting..." : "Submit Ticket"}
           </button>
 
+          {/* Cancel button */}
           <button
             onClick={goDashboard}
             className="bg-gray-300 hover:bg-gray-400 px-4 py-2 rounded w-full md:w-auto cursor-pointer"

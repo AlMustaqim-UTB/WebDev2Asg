@@ -4,31 +4,36 @@ import { useAuth } from "../../auth/userAuth";
 import DetailRow from "../../components/tickets/DetailRow";
 import toast from "react-hot-toast";
 
-//const API = ""; //API route for cloud hosting
+// API base URL
 const RAW_API = import.meta.env.VITE_API_URL || "http://localhost:5000";
-const API = RAW_API.replace(/\/+$/, "").replace(/\/api$/i, "");
+const API = RAW_API.replace(/\/+$/, "").replace(/\/api$/i, ""); // Clean up the API URL to avoid double slashes or /api/api
 
 export default function TicketEdit() {
-  const { id } = useParams();
-  const navigate = useNavigate();
-  const { user } = useAuth();
+  const { id } = useParams(); // Get ticket ID from URL
+  const navigate = useNavigate(); // Used to navigate after saving or cancelling
+  const { user } = useAuth(); // Get logged-in user (to check role/permission)
 
-  const [ticket, setTicket] = useState(null);
-  const [technicians, setTechnicians] = useState([]);
+  const [ticket, setTicket] = useState(null); // Stores the ticket being edited
+  const [technicians, setTechnicians] = useState([]); // Stores list of technicians for assignment dropdown
+  // Stores editable fields
   const [formData, setFormData] = useState({
     status: "",
     priority: "",
     assigned_to: "",
   });
+  // Controls loading state while fetching data
   const [loading, setLoading] = useState(true);
+  // Stores API or permission errors
   const [error, setError] = useState(null);
 
+  // Fetch ticket details and technician list when page loads
   useEffect(() => {
     const fetchTicketAndTechnicians = async () => {
       try {
         setLoading(true);
         setError(null);
 
+        // Fetch ticket details
         const ticketResponse = await fetch(`${API}/api/tickets/id/${id}`, {
           credentials: "include",
         });
@@ -37,7 +42,10 @@ export default function TicketEdit() {
           throw new Error(ticketData.msg || "Failed to fetch ticket details.");
         }
 
+        // Save ticket data
         setTicket(ticketData);
+
+        // Initialize editable fields
         setFormData({
           status: ticketData.status || "Open",
           priority: ticketData.priority || "Low",
@@ -45,11 +53,12 @@ export default function TicketEdit() {
             ticketData.assigned_to?._id || ticketData.assigned_to || "",
         });
 
-        // Try /api/auth/technicians first, fallback /api/users/technicians
+        // Try fetching technicians from auth route first
         let techResponse = await fetch(`${API}/api/auth/technicians`, {
           credentials: "include",
         });
 
+        // Fallback route if first fails
         if (!techResponse.ok) {
           techResponse = await fetch(`${API}/api/users/technicians`, {
             credentials: "include",
@@ -61,14 +70,17 @@ export default function TicketEdit() {
           throw new Error("Failed to fetch technicians.");
         }
 
+        // Save technician list
         setTechnicians(Array.isArray(techData) ? techData : []);
       } catch (err) {
+        // Display error if loading fails
         setError(err.message || "Failed to load edit form.");
       } finally {
         setLoading(false);
       }
     };
 
+    // Only technicians are allowed to edit tickets
     if (user?.role === "technician") {
       fetchTicketAndTechnicians();
     } else if (user) {
@@ -77,23 +89,28 @@ export default function TicketEdit() {
     }
   }, [id, user]);
 
+  // Handle dropdown value changes
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
+  // Submit updated ticket details
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    // Confirm before saving
     if (!window.confirm("Are you sure you want to save these changes?")) return;
 
     try {
       const updateData = { ...formData };
 
+      // Set resolved date when status changes to Resolved
       if (formData.status === "Resolved" && ticket.status !== "Resolved") {
         updateData.date_resolved = new Date().toISOString();
       }
 
+      // Send update request
       const response = await fetch(`${API}/api/tickets/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -106,33 +123,40 @@ export default function TicketEdit() {
         throw new Error(data.msg || data.message || "Failed to update ticket.");
       }
 
+      // Show success feedback
       toast.success("Ticket updated successfully");
 
+      // Navigate back to ticket detail
       setTimeout(() => {
         navigate(`/tickets/${id}`);
       }, 1000);
     } catch (err) {
+      // Display error feedback
       setError(err.message || "Failed to update ticket.");
       toast.error(msg);
       setError(msg);
     }
   };
 
-  if (loading) return <div>Loading...</div>;
-  if (error) return <div className="text-red-500 p-4">{error}</div>;
-  if (!ticket) return <div>Ticket not found.</div>;
+  if (loading) return <div>Loading...</div>; // Loading UI
+  if (error) return <div className="text-red-500 p-4">{error}</div>; // Error UI
+  if (!ticket) return <div>Ticket not found.</div>; // Ticket not found
 
+  // Generate ticket reference key
   const ticketKey =
     ticket.key || (ticket._id ? `#${String(ticket._id).slice(-6)}` : "N/A");
+  // Normalize created date
   const createdDate = ticket.date_created || ticket.createdAt;
 
   return (
     <div className="min-h-screen bg-[#f2f2f2]">
       <div className="p-4 md:p-6 max-w-2xl mx-auto">
+        {/* Page title */}
         <h1 className="text-xl md:text-2xl font-bold mb-6">
           Edit Ticket {ticketKey}
         </h1>
 
+        {/* Edit form */}
         <form
           id="ticket-edit-form"
           onSubmit={handleSubmit}
@@ -201,6 +225,7 @@ export default function TicketEdit() {
           </DetailRow>
         </form>
 
+        {/* Action buttons */}
         <div className="mt-6 flex flex-col md:flex-row gap-3">
           <button
             type="submit"
