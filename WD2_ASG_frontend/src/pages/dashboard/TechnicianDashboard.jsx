@@ -4,32 +4,40 @@ import TicketCard from "../../components/tickets/TicketCard";
 import TicketTable from "../../components/tickets/TicketTable";
 import StatCard from "../../components/dashboard/StatCard";
 
+// API base URL
 const RAW_API = import.meta.env.VITE_API_URL || "http://localhost:5000";
-const API = RAW_API.replace(/\/+$/, "").replace(/\/api$/i, ""); // prevent /api/api
+const API = RAW_API.replace(/\/+$/, "").replace(/\/api$/i, ""); // Clean up the API URL to avoid double slashes or /api/api
+
+// Technician dashboard page
 
 export default function TechnicianDashboard() {
-  const [tickets, setTickets] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const navigate = useNavigate();
+  const [tickets, setTickets] = useState([]); // Stores tickets fetched from backend
+  const [loading, setLoading] = useState(true); // Controls loading state while fetching data
+  const [error, setError] = useState(null); // Stores any error message when fetchin fails
+  const navigate = useNavigate(); // Used to redirect user
 
+  // Fetch ticket data when component mounts
   useEffect(() => {
     const fetchTickets = async () => {
       try {
+        // Call backend API to get all tickets
         const response = await fetch(`${API}/api/tickets/all`, {
-          credentials: "include",
+          credentials: "include", // include auth cookies
         });
 
-        const data = await response.json().catch(() => ({}));
+        const data = await response.json().catch(() => ({})); // Parse JSON response safely
+
+        // Throw an error if response failed
         if (!response.ok) {
           throw new Error(
-            `HTTP ${response.status}: ${data.msg || data.message || "Unknown error"}`
+            `HTTP ${response.status}: ${data.msg || data.message || "Unknown error"}`,
           );
         }
 
+        // Update tickets state (array)
         setTickets(Array.isArray(data) ? data : []);
       } catch (err) {
-        console.error("Fetch error:", err);
+        console.error("Fetch error:", err); // Store error message if API call fails
         setError(err.message || "Failed to fetch tickets");
       } finally {
         setLoading(false);
@@ -39,12 +47,13 @@ export default function TechnicianDashboard() {
     fetchTickets();
   }, []);
 
+  // Handle clicking a ticket (navigate to ticket detail page if clicked)
   const handleSelect = (id) => {
     navigate(`/tickets/${id}`);
   };
 
-  if (loading) return <div className="p-4">Loading tickets...</div>;
-  if (error) return <div className="p-4 text-red-500">Error: {error}</div>;
+  if (loading) return <div className="p-4">Loading tickets...</div>; // Loading UI while fetching data
+  if (error) return <div className="p-4 text-red-500">Error: {error}</div>; // AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 
   const open = tickets.filter((t) => t.status === "Open").length;
   const inProgress = tickets.filter((t) => t.status === "In Progress").length;

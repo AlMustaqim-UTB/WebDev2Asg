@@ -1,21 +1,23 @@
-import { useEffect, useRef, useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Menu, X, User, LogOut } from "lucide-react";
-import { useAuth } from "../../auth/userAuth";
-import TechnicianNav from "./TechnicianNav";
-import UserNav from "./UserNav";
+import { useEffect, useRef, useState } from "react"; // React hooks
+import { Link, useLocation, useNavigate } from "react-router-dom"; // React router helpers
+import { Menu, X, User, LogOut } from "lucide-react"; // Icons for menu, user, X button, and logout
+import { useAuth } from "../../auth/userAuth"; // Auth context hook
+import TechnicianNav from "./TechnicianNav"; // Technician navbar component
+import UserNav from "./UserNav"; // User navbar component
 
 export default function Navbar() {
-  const { user, logout } = useAuth();
-  const navigate = useNavigate();
+  const { user, logout } = useAuth(); // Get the logged-in user and logout function from auth context
+  const navigate = useNavigate(); // React router helpers
   const location = useLocation();
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const [dropdownOpen, setDropdownOpen] = useState(false);
-  const dropdownRef = useRef(null);
+  const [mobileOpen, setMobileOpen] = useState(false); // State for mobile menu toggle
+  const [dropdownOpen, setDropdownOpen] = useState(false); // State for desktop user dropdown
+  const dropdownRef = useRef(null); // Ref used to detect clicks outside the dropdown
 
+  // Check if the current page is Login or Register
   const isAuthPage =
     location.pathname === "/login" || location.pathname === "/register";
 
+  // Handle logout action: logs the user out, closes menus, redirects to login page
   const handleLogout = async () => {
     await logout();
     setDropdownOpen(false);
@@ -23,7 +25,7 @@ export default function Navbar() {
     navigate("/login");
   };
 
-  // Hooks must always run, before conditional returns
+  // Closes the user dropdown when clicking outside of it
   useEffect(() => {
     function handleClickOutside(e) {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
@@ -34,21 +36,26 @@ export default function Navbar() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // No navbar in login/register page or when user is not
   if (isAuthPage || !user) return null;
 
+  // Render navigation links based on user role
   const renderNavLinks = () =>
     user.role === "technician" ? <TechnicianNav /> : <UserNav />;
 
   return (
     <nav className="bg-[#274c77] text-[#e7ecef] px-4 py-4">
       <div className="container mx-auto flex justify-between items-center">
+        {/* Logo in the navbar */}
         <Link to="/dashboard" className="bg-white rounded p-1">
           <img src="/logo.png" alt="Logo" className="h-8 w-auto" />
         </Link>
 
-        {/* Desktop Menu */}
+        {/* Desktop menu / navigation (hidden on mobile view / small screens) */}
         <div className="hidden md:flex items-center space-x-6">
           {renderNavLinks()}
+
+          {/* Desktop user dropdown */}
           {user && (
             <div className="relative" ref={dropdownRef}>
               <button
@@ -58,6 +65,7 @@ export default function Navbar() {
                 <User size={20} />
                 {user.name}
               </button>
+              {/* Dropdown menu */}
               {dropdownOpen && (
                 <div className="absolute right-0 mt-2 w-32 bg-white text-[#274c77] rounded shadow">
                   <button
@@ -73,7 +81,7 @@ export default function Navbar() {
           )}
         </div>
 
-        {/* Mobile Menu Button */}
+        {/* Mobile menu button (with hamburger icon) */}
         <button
           className="md:hidden text-2xl hover:text-[#a3cef1] transition-colors cursor-pointer"
           onClick={() => setMobileOpen((prev) => !prev)}
@@ -92,6 +100,7 @@ export default function Navbar() {
           <div className="space-y-4">
             {renderNavLinks()}
 
+            {/* Mobile user logout */}
             <div className="border-t border-[#6096ba] pt-3 space-y-2">
               <div className="flex items-center">
                 <User size={20} className="inline-block mr-1" />

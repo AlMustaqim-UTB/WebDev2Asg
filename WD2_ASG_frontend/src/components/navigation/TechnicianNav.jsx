@@ -1,8 +1,10 @@
 import { NavLink } from "react-router-dom";
 
-export default function TechnicianNav({ setPage }) {
+// Navigation component is only show for technician users
+export default function TechnicianNav() {
   return (
     <div className="flex flex-col md:flex-row gap-4 items-start">
+      {/* Dashboard link/button */}
       <NavLink
         to="/dashboard"
         className={({ isActive }) =>

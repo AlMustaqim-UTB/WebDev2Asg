@@ -4,7 +4,11 @@ import DetailRow from "../../components/tickets/DetailRow";
 import StatusBadge from "../../components/tickets/StatusBadge";
 import PriorityBadge from "../../components/tickets/PriorityBadge";
 import { useAuth } from "../../auth/userAuth";
+import toast from "react-hot-toast";
+import { Trash2  } from "lucide-react";
 
+
+//const API = ""; //API route for cloud hosting
 const RAW_API = import.meta.env.VITE_API_URL || "http://localhost:5000";
 const API = RAW_API.replace(/\/+$/, "").replace(/\/api$/i, "");
 
@@ -34,7 +38,11 @@ export default function TicketDetail() {
 
         const data = await response.json().catch(() => ({}));
         if (!response.ok) {
-          throw new Error(data.msg || data.message || `HTTP error! status: ${response.status}`);
+          throw new Error(
+            data.msg ||
+              data.message ||
+              `HTTP error! status: ${response.status}`,
+          );
         }
 
         setTicket(data);
@@ -73,8 +81,46 @@ export default function TicketDetail() {
       if (refresh.ok) setTicket(refreshed);
 
       setNewRemark("");
+
+      toast.success("Remark added successfully");
     } catch (err) {
       setError(err.message || "Failed to add remark");
+      toast.error(msg);
+      setError(msg);
+    }
+  };
+
+  //delete a remark event handler
+  //'fetch' a delete request to the delete remark API endpoint on the backend
+  const handleDeleteRemark = async (remarkId) => {
+    if (!ticket?._id || !remarkId) return;
+
+    if (!window.confirm("Are you sure you want to delete this remark? This action cannot be undone.")) {
+      return; // Stop the function if the user clicks "Cancel"
+    }
+
+    try {
+      setError(null);
+
+      const response = await fetch(`${API}/api/tickets/${ticket._id}/remarks/${remarkId}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.msg || data.message || "Failed to delete remark");
+      }
+
+      // Refresh ticket data to show the remark has been removed
+      const refresh = await fetch(`${API}/api/tickets/id/${ticket._id}`, {
+        credentials: "include",
+      });
+      const refreshed = await refresh.json().catch(() => ({}));
+      if (refresh.ok) setTicket(refreshed);
+      
+    } catch (err) {
+      setError(err.message || "Failed to delete remark");
     }
   };
 
@@ -83,14 +129,17 @@ export default function TicketDetail() {
   if (!ticket) return <div>Ticket not found</div>;
 
   const isTechnician = user?.role === "technician";
-  const ticketKey = ticket.key || (ticket._id ? `#${String(ticket._id).slice(-6)}` : "N/A");
+  const ticketKey =
+    ticket.key || (ticket._id ? `#${String(ticket._id).slice(-6)}` : "N/A");
   const createdDate = ticket.date_created || ticket.createdAt;
   const resolvedDate = ticket.date_resolved || ticket.resolvedAt;
 
   return (
     <div className="min-h-screen bg-[#f2f2f2]">
       <div className="p-4 max-w-4xl mx-auto">
-        <h1 className="text-xl md:text-2xl font-bold mb-6">Ticket {ticketKey}</h1>
+        <h1 className="text-xl md:text-2xl font-bold mb-6">
+          Ticket {ticketKey}
+        </h1>
         <div className="bg-white rounded-lg shadow-sm p-4 md:p-6 space-y-6">
           <DetailRow label="Title">{ticket.title}</DetailRow>
 
@@ -139,7 +188,7 @@ export default function TicketDetail() {
           {isTechnician && (
             <button
               onClick={() => navigate(`/edit-ticket/${ticket._id}`)}
-              className="bg-[#6096ba] hover:bg-blue-400 text-white px-4 py-2 rounded cursor-pointer"
+              className="bg-[#274c77] hover:opacity-90 text-white px-4 py-2 rounded cursor-pointer"
             >
               Edit Ticket
             </button>
@@ -151,25 +200,6 @@ export default function TicketDetail() {
             Back to Dashboard
           </button>
         </div>
-
-          <div className="space-y-4 mt-5">
-            {ticket.remarks && ticket.remarks.length > 0 ? (
-              ticket.remarks.map((remark) => {
-                const remarkDate = remark.date || remark.createdAt;
-                return (
-                  <div key={remark._id} className="border-l-4 border-[#6096ba] pl-3">
-                    <p className="text-sm">{remark.message}</p>
-                    <p className="text-xs text-[#8b8c89] mt-1">
-                      {remark.author?.name || "Unknown User"} ({remark.author?.role || "user"}) ·{" "}
-                      {remarkDate ? new Date(remarkDate).toLocaleString() : "N/A"}
-                    </p>
-                  </div>
-                );
-              })
-            ) : (
-              <p className="text-gray-500">No remarks yet.</p>
-            )}
-          </div>
 
           <div className="mt-6 bg-white rounded-lg shadow-sm p-4 md:p-6">
           <h2 className="text-lg font-semibold mb-4">Remarks</h2>
@@ -184,13 +214,49 @@ export default function TicketDetail() {
           <div className="flex flex-col md:flex-row gap-3">
             <button
               onClick={handleAddRemark}
-              className="mt-2 bg-[#274c77] hover:opacity-90 text-white px-4 py-2 rounded cursor-pointer"
+              className="mt-2 bg-[#6096ba] hover:bg-blue-400 text-white px-4 py-2 rounded cursor-pointer "
             >
               Submit Remark
             </button>
+          </div>
+          <div className="space-y-4 mt-5">
+            {ticket.remarks && ticket.remarks.length > 0 ? (
+              ticket.remarks.map((remark) => {
+                const remarkDate = remark.date || remark.createdAt;
+                return (
+                  <div key={remark._id} className="border-l-4 border-[#6096ba] pl-3">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <p className="text-sm">{remark.message}</p>
+                        <p className="text-xs text-[#8b8c89] mt-1">
+                          {remark.author?.name || "Unknown User"} (
+                          {remark.author?.role || "user"}) ·{" "}
+                          {remarkDate
+                            ? new Date(remarkDate).toLocaleString()
+                            : "N/A"}
+                        </p>
+                      </div>
+                      {/* remark delete button */}
+                      {isTechnician && (
+                        <button
+                          onClick={() => handleDeleteRemark(remark._id)}
+                          className="bg-red-500 text-red-100 text-xs rounded ml-4 px-3 py-2 rounded cursor-pointer hover:bg-red-300"
+                        >
+                          <Trash2 size={20}/>
+                        </button>
+                        )}
+                    </div>
+                    
+                  </div>
+                );
+              })
+            ) : (
+              <p className="text-gray-500">No remarks yet.</p>
+            )}
           </div>
         </div>
       </div>
     </div>
   );
 }
+//test
