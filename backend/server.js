@@ -17,6 +17,7 @@ const startServer = async () => {
 
     app.use(
       cors({
+        //origin: ["http://129.212.229.121", "https://www.ticketwatch.site", "http://ticketwatch.site"] // this is for digital ocean
         origin: "http://localhost:5173",
         credentials: true,
       })
