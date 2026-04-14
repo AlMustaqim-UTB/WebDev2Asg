@@ -12,15 +12,17 @@ const createTicket = async (req, res) => {
     return res.status(400).json({ msg: "Please enter all fields" });
   }
 
+  //find the most recently created ticket to determine the next key
   try {
     const lastTicket = await Ticket.findOne().sort({ date_created: -1 });
     let newKey = "IT-1001";
 
+    //parse the last created ticket key and increment its number
     if (lastTicket && lastTicket.key) {
       const lastKeyNumber = parseInt(lastTicket.key.split("-")[1], 10);
       newKey = `IT-${lastKeyNumber + 1}`;
     }
-
+  
     const newTicket = new Ticket({
       key: newKey,
       title,
@@ -29,6 +31,7 @@ const createTicket = async (req, res) => {
       created_by: req.user.id,
     });
 
+    //save ticket to db and return it
     const ticket = await newTicket.save();
     return res.status(201).json(ticket);
   } catch (err) {
@@ -43,7 +46,7 @@ const getUserTickets = async (req, res) => {
   try {
     const tickets = await Ticket.find({ created_by: req.user.id })
       .populate("assigned_to", "name role")
-      .sort({ date_created: -1 });
+      .sort({ date_created: -1 }); //sort ticket by newest first
 
     return res.json(tickets);
   } catch (error) {
@@ -60,6 +63,8 @@ const addRemark = async (req, res) => {
       return res.status(400).json({ msg: "Remark message is required." });
     }
 
+    //validate ticket ID parameter, ensure the ticket exist
+    //mostly for error handling just incase
     if (!isValidObjectId(req.params.id)) {
       return res.status(400).json({ msg: "Invalid ticket id" });
     }
@@ -67,6 +72,8 @@ const addRemark = async (req, res) => {
     const ticket = await Ticket.findById(req.params.id);
     if (!ticket) return res.status(404).json({ msg: "Ticket not found" });
 
+    //Set it so that standard users can only create remarks on their own ticket.
+    //might not be necessary but its good to have it just in case
     if (req.user.role === "user" && ticket.created_by.toString() !== req.user.id) {
       return res.status(403).json({ msg: "Access denied." });
     }
@@ -75,11 +82,13 @@ const addRemark = async (req, res) => {
       message,
       author: req.user.id,
     });
-
+    
+    //save the remark and link its ID to the ticket's remarks array 
     await newRemark.save();
     ticket.remarks.push(newRemark._id);
     await ticket.save();
 
+    //feth the newly created remark with additional details
     const populatedRemark = await Remark.findById(newRemark._id).populate("author", "name role");
     return res.status(201).json(populatedRemark);
   } catch (error) {
@@ -126,6 +135,7 @@ const getTicketById = async (req, res) => {
       return res.status(400).json({ msg: "Invalid ticket id" });
     }
 
+    //fetch the ticket and populate its relational data
     const ticket = await Ticket.findById(id)
       .populate("created_by", "name department role")
       .populate("assigned_to", "name role")
@@ -145,6 +155,8 @@ const getTicketById = async (req, res) => {
 
 // Update ticket (only by technician)
 const updateTicket = async (req, res) => {
+  //authorization check
+  //since the edit button doesnt exist on users might not be necessary but still its good to have
   if (req.user.role !== "technician") {
     return res.status(403).json({ msg: "Access denied. Not a technician." });
   }
@@ -159,6 +171,8 @@ const updateTicket = async (req, res) => {
     const ticket = await Ticket.findById(req.params.id);
     if (!ticket) return res.status(404).json({ msg: "Ticket not found" });
 
+
+  //apply updates provided
     if (status) ticket.status = status;
     if (priority) ticket.priority = priority;
     if (assigned_to !== undefined) ticket.assigned_to = assigned_to === "" ? null : assigned_to;
