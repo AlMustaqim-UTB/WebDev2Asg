@@ -4,6 +4,7 @@ import DetailRow from "../../components/tickets/DetailRow";
 import StatusBadge from "../../components/tickets/StatusBadge";
 import PriorityBadge from "../../components/tickets/PriorityBadge";
 import { useAuth } from "../../auth/userAuth";
+import { Trash2  } from "lucide-react";
 
 //const API = ""; //API route for cloud hosting
 const RAW_API = import.meta.env.VITE_API_URL || "http://localhost:5000";
@@ -83,6 +84,10 @@ export default function TicketDetail() {
   //'fetch' a delete request to the delete remark API endpoint on the backend
   const handleDeleteRemark = async (remarkId) => {
     if (!ticket?._id || !remarkId) return;
+
+    if (!window.confirm("Are you sure you want to delete this remark? This action cannot be undone.")) {
+      return; // Stop the function if the user clicks "Cancel"
+    }
 
     try {
       setError(null);
@@ -202,9 +207,9 @@ export default function TicketDetail() {
                       {isTechnician && (
                         <button
                           onClick={() => handleDeleteRemark(remark._id)}
-                          className="bg-red-500 text-red-100 text-xs rounded ml-4 px-4 py-2 rounded cursor-pointer hover:bg-red-300"
+                          className="bg-red-500 text-red-100 text-xs rounded ml-4 px-3 py-2 rounded cursor-pointer hover:bg-red-300"
                         >
-                          Delete Remark
+                          <Trash2 size={20}/>
                         </button>
                         )}
                     </div>
